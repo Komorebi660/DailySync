@@ -115,7 +115,7 @@ docker exec -it vectordb_cyq bash
 psql -U vectordb -f xxx.sql
 ```
 
-PostgresSQL常用操作见[此](https://mozillazg.com/2014/06/hello-postgresql.html), 部分命令如下:
+PostgresSQL常用操作点[这里](https://mozillazg.com/2014/06/hello-postgresql.html), 部分命令如下:
 
 ```bash
 #进入控制台
