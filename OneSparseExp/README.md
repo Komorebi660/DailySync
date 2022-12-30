@@ -1,6 +1,21 @@
 # Experiment for Paper *OneSparse*
 
-## Step1: Get Data
+- [Experiment for Paper *OneSparse*](#experiment-for-paper-onesparse)
+  - [Get Data](#get-data)
+    - [inner product -\> l2 norm](#inner-product---l2-norm)
+  - [Run Elasticsearch](#run-elasticsearch)
+    - [docker安装](#docker安装)
+    - [build index](#build-index)
+    - [search](#search)
+    - [utils](#utils)
+  - [Run SPANN](#run-spann)
+    - [install](#install)
+    - [build index](#build-index-1)
+    - [search](#search-1)
+  - [Evaluation](#evaluation)
+  - [Filter Search](#filter-search)
+
+## Get Data
 
 下载并解压[MS Marco Passages](https://microsoft.github.io/msmarco/TREC-Deep-Learning-2019.html)数据集:
 
@@ -63,7 +78,7 @@ def transform(x):
     return np.hstack((extracol.reshape(-1, 1), x)).astype(np.float32)
 ```
 
-## Step2: Elasticsearch
+## Run Elasticsearch
 
 官方文档:
 
@@ -227,7 +242,7 @@ curl -X GET https://localhost:9400/ms-marco/ --cacert http_ca.crt -u elastic
 curl -X GET https://localhost:9400/ms-marco/_doc/0 --cacert http_ca.crt -u elastic
 ```
 
-## SPANN
+## Run SPANN
 
 ### install
 
@@ -276,9 +291,7 @@ cmake ..
 make -j8
 ```
 
-接下来和SPANN有关的代码都最好放在`Release`文件夹下运行。
-
-关于SPANN的使用，可以参考[此](https://github.com/microsoft/SPTAG/blob/main/docs/Tutorial.ipynb)。
+关于SPANN的使用，可以参考[这里](https://github.com/microsoft/SPTAG/blob/main/docs/Tutorial.ipynb)。接下来和SPANN有关的代码都最好放在`Release`文件夹下运行。
 
 ### build index
 
@@ -288,7 +301,7 @@ make -j8
 - `PostingPageLimit`和`SearchPostingPageLimit`也需要**保持一致**, 原因同上, 是指一个posting最多有多少个4k page.
 - `index.SetBuildParam("xxx", "xxx", "SearchSSDIndex")`貌似没有用, 所有的设置都要写成`index.SetBuildParam("xxx", "xxx", "BuildSSDIndex")`.
 
-代码见[此](./SPANN/build-index.py), 使用下面的命令运行脚本(可能需要几个小时)。
+代码见[这里](./SPANN/build-index.py), 使用下面的命令运行脚本构建索引(可能需要几个小时)。
 
 ```bash
 python3 -u build-index.py 2>&1 > build-index.log &
@@ -311,13 +324,13 @@ python3 -u build-index.py 2>&1 > build-index.log &
 
 ### search
 
-`SPANN`搜索代码见[此](./SPANN/search.py), 使用下面的命令运行脚本。
+`SPANN`搜索代码在[这里](./SPANN/search.py), 我们可以使用下面的命令运行脚本。
 
 ```bash
 python3 -u search.py 2>&1 > search.log &
 ```
 
-`SPANN`+`Inverted Index`搜索代码见[此](./SPANN/hybrid-search.py), 基本思想是`SPANN`和`Elasticsearch`各搜索200个结果, 然后合并。使用下面的命令运行脚本。
+`SPANN`+`Inverted Index`搜索代码在[这里](./SPANN/hybrid-search.py), 基本思想是`SPANN`和`Elasticsearch`各搜索200个结果, 然后合并。使用下面的命令运行脚本。
 
 ```bash
 python3 -u hybrid-search.py 2>&1 > hybrid-search.log &
@@ -325,13 +338,13 @@ python3 -u hybrid-search.py 2>&1 > hybrid-search.log &
 
 ## Evaluation
 
-Accuracy部分的验证需要在**Windows Python3.9**环境下进行, 代码见[此](./Evaluation/eval_trec.py):
+Accuracy部分的验证需要在**Windows Python3.9**环境下进行, 代码见[这里](./Evaluation/eval_trec.py):
 
 ```bash
 python -u eval_trec.py --trec_path "path-to-search-result" --qrels_path "./qrels.dev.small.tsv" --output_path "./results.tsv"
 ```
 
-Latency部分代码见[此](./Evaluation/eval_latency.py):
+Latency计算的代码见[这里](./Evaluation/eval_latency.py):
 
 ```bash
 python3 eval_latency.py
