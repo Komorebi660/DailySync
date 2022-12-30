@@ -1,5 +1,13 @@
 # Multi-Column TopK Experiment
 
+- [Multi-Column TopK Experiment](#multi-column-topk-experiment)
+  - [Run Scripts](#run-scripts)
+  - [Function Defination](#function-defination)
+  - [Demo SQL](#demo-sql)
+  - [Utils](#utils)
+
+## Run Scripts
+
 Clone the repository:
 
 ```bash
@@ -115,7 +123,7 @@ docker exec -it vectordb_cyq bash
 psql -U vectordb -f xxx.sql
 ```
 
-PostgresSQL常用操作点[这里](https://mozillazg.com/2014/06/hello-postgresql.html), 部分命令如下:
+PostgresSQL常用操作如下:
 
 ```bash
 #进入控制台
@@ -133,3 +141,5 @@ psql -U vectordb
 #列出当前数据库的所有表格
 \d
 ```
+
+更多命令可以点击点[这里](https://mozillazg.com/2014/06/hello-postgresql.html)。
