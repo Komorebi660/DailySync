@@ -2,7 +2,7 @@
 
 ## Step1: Get Data
 
-下载并解压[MS Marco Passage](https://microsoft.github.io/msmarco/TREC-Deep-Learning-2019.html)数据集:
+下载并解压[MS Marco Passages](https://microsoft.github.io/msmarco/TREC-Deep-Learning-2019.html)数据集:
 
 ```bash
 mkdir data
@@ -13,7 +13,7 @@ tar -zvxf collectionandqueries.tar.gz
 
 我们只需要使用其中的三个文件:
 - `collection.tsv`: 8,841,823 passages, 每一行是一篇passage, 格式为`pid \t passage`, `pid`从0开始，有序排列。
-- `queries.dev.small.tsv`: 6,980 queries, 每一行是一个query, 格式为`qid \t query`, `qid`无序排列。
+- `queries.dev.small.tsv`: 6,980 queries, 每一行是一个query, 格式为`qid \t query`, 无序排列。
 - `qrels.dev.small.tsv`: query results.
 
 读取`tsv`文件的代码如下:
@@ -27,10 +27,10 @@ with open("xxx.tsv", "r", encoding="utf8") as f:
         ...
 ```
 
-下面获取embedding数据, 可以用`scp`传输到服务器上。embedding数据包含两部分:
+接下来需要获取embedding数据, 可以用`scp`传输到服务器上。embedding数据包含两部分:
 
-- corpus: 均匀拆分成了10份, 从`split00.pt`到`split09.pt`, 格式为`[embedding_matrix, pid_list]`, embedding用ar2g生成, 768维, inner product.
-- query: 格式同上, `embedding_matrix`是6980*768的矩阵。
+- `corpus`: 均匀拆分成了10份, 从`split00.pt`到`split09.pt`, 格式为`[embedding_matrix, pid_list]`, embedding用ar2g生成, 768维, inner product.
+- `query`: 格式同上, `embedding_matrix`是6980*768的矩阵。
 
 读取`pt`文件的代码如下:
 
@@ -87,10 +87,18 @@ docker run --name cyq-es --net elastic -p 9400:9200 -p 9500:9300 -e "discovery.t
 等待docker创建完毕，屏幕上会出现password, 将其记下来, 同时还需要复制`http_ca.crt`.
 
 ```bash
-docker cp cyq-es02:/usr/share/elasticsearch/config/certs/http_ca.crt .
+docker cp cyq-es:/usr/share/elasticsearch/config/certs/http_ca.crt .
 ```
 
-通过`python request`访问es:
+验证certificate:
+
+```bash
+curl --cacert http_ca.crt -u elastic https://localhost:9400
+```
+
+输入密码后可以看到user的信息, 说明认证正常。之后可以关闭这一终端, 此时docker仍在后台运行, 可以使用`docker ps`查看。
+
+我们可以通过`python request`访问es:
 
 ```python
 import requests
@@ -110,14 +118,6 @@ payload = {
 response = requests.request("PUT or POST", url, headers=headers, data=json.dumps(payload), verify=cert, auth=(user, password))
 assert response.ok
 ```
-
-验证certificate:
-
-```bash
-curl --cacert http_ca.crt -u elastic https://localhost:9400
-```
-
-输入密码后可以看到user的信息, 说明认证正常。
 
 ### build index
 
@@ -264,7 +264,7 @@ export BOOST_INCLUDEDIR=./boost/include:$BOOST_INCLUDEDIR
 export BOOST_LIBRARYDIR=./boost/lib:$BOOST_LIBRARYDIR
 ```
 
-clone `sptag` and install:
+Clone `sptag` and install:
 
 ```bash
 git clone --recursive https://github.com/microsoft/SPTAG.git
@@ -288,7 +288,7 @@ make -j8
 - `PostingPageLimit`和`SearchPostingPageLimit`也需要**保持一致**, 原因同上, 是指一个posting最多有多少个4k page.
 - `index.SetBuildParam("xxx", "xxx", "SearchSSDIndex")`貌似没有用, 所有的设置都要写成`index.SetBuildParam("xxx", "xxx", "BuildSSDIndex")`.
 
-代码见[此](./SPANN/build-index.py)
+代码见[此](./SPANN/build-index.py), 使用下面的命令运行脚本(可能需要几个小时)。
 
 ```bash
 python3 -u build-index.py 2>&1 > build-index.log &
@@ -297,27 +297,27 @@ python3 -u build-index.py 2>&1 > build-index.log &
 构建完成后得到index的目录如下:
 
 ```bash
-HeadIndex
-    deletes.bin  
-    graph.bin  
-    indexloader.ini  
-    tree.bin  
-    vectors.bin
-indexloader.ini  
-SPTAGFullList.bin  
-SPTAGHeadVectorIDs.bin  
-SPTAGHeadVectors.bin
+- HeadIndex
+    - deletes.bin  
+    - graph.bin  
+    - indexloader.ini  
+    - tree.bin  
+    - vectors.bin
+- indexloader.ini  
+- SPTAGFullList.bin  
+- SPTAGHeadVectorIDs.bin  
+- SPTAGHeadVectors.bin
 ```
 
 ### search
 
-`SPANN`搜索代码见[此](./SPANN/search.py)
+`SPANN`搜索代码见[此](./SPANN/search.py), 使用下面的命令运行脚本。
 
 ```bash
 python3 -u search.py 2>&1 > search.log &
 ```
 
-`SPANN`+`Inverted Index`搜索代码见[此](./SPANN/hybrid-search.py), 基本思想是`SPANN`和`Elasticsearch`各搜索200个结果，然后合并。
+`SPANN`+`Inverted Index`搜索代码见[此](./SPANN/hybrid-search.py), 基本思想是`SPANN`和`Elasticsearch`各搜索200个结果, 然后合并。使用下面的命令运行脚本。
 
 ```bash
 python3 -u hybrid-search.py 2>&1 > hybrid-search.log &
@@ -341,13 +341,13 @@ python3 eval_latency.py
 
 为MS Marco数据随机生成**zipf**分布的`location`, 共有100个`location`, 每个`(str)location`对应一个`(int)tag`.
 
-Zipf's law是美国语言学家Zipf发现的，他在1932年研究英文单词的出现频率时，发现如果把单词频率从高到低的次序排列，每个单词出现频率$P(r)$和它的频率排名$r$存在简单反比关系:
+Zipf's law是美国语言学家Zipf发现的，他在1932年研究英文单词的出现频率时，发现如果把单词频率从高到低的次序排列，每个单词出现频率 $P(r)$ 和它的频率排名 $r$ 存在简单反比关系:
 
 $$P(r) = \frac{C}{r^\alpha}$$
 
 这个定理说明只有少数单词被经常使用, 这一定律也在互联网内容访问中成立。
 
-我们生成的zipf分布中$C=0.1928$, $\alpha=1$, 概率密度图如下:
+我们生成的zipf分布中 $C=0.1928$, $\alpha=1$, 概率密度图如下:
 
 <div align=center>
 <img src="./FilterSearch/zipf.jpg" width=80%/>
