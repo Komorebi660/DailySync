@@ -364,9 +364,7 @@ Zipf's law是美国语言学家Zipf发现的，他在1932年研究英文单词�
 
 $$P(r) = \frac{C}{r^\alpha}$$
 
-这个定理说明只有少数单词被经常使用, 这一定律也在互联网内容访问中成立。
-
-我们生成的zipf分布中 $C=0.1928$, $\alpha=1$, 概率密度图如下:
+这个定理说明只有少数单词被经常使用, 这一定律也在互联网内容访问中成立。我们生成的zipf分布中 $C=0.1928$, $\alpha=1$, 概率密度图如下:
 
 <div align=center>
 <img src="./FilterSearch/zipf.jpg" width=80%/>
@@ -376,6 +374,6 @@ $$P(r) = \frac{C}{r^\alpha}$$
 在`FilterSearch`文件夹中:
 
 - `gen_filter.py`用于生成`location`和`tag`.
-- `gen_gt.py`用于生成ground truth.
+- `gen_gt.py`用于生成ground truth. 格式为`qid pid rank score`
 - `spann_filter.py`每次**double** SPANN返回的结果直到filter后剩余结果超过100个，该结果作为baseline.
 - `eval.py`用于计算filter search的`MRR`和`Recall`.
