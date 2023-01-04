@@ -51,7 +51,7 @@ $$q(x_{1:T}|x_0) = \prod_{t=1}^{T}{q(x_t|x_{t-1})} = \prod_{t=1}^{T}{\mathcal{N}
 
 其中 $\beta_1, \cdots, \beta_T$ 是高斯分布方差的超参数, 一般设置为是由 $0.0001$ 到 $0.02$ 线性插值。在扩散过程中，随着 $t$ 的增大, $x_t$ 越来越接近纯噪声。当 $T$ 足够大的时候，收敛为标准高斯噪声 $\mathcal{N}(0, \mathbf{I})$ 。
 
-能够通过 $x_0$ 和 $\beta$ 快速得到 $x_t$ 对后续diffusion model的推断有巨大作用。首先我们假设 $\alpha_t = 1 - \beta_t$ ，并且 $\overline{\alpha_t} = \prod_{i=1}^{t}{\alpha_i}$ ，展开 $x_t$ 可以得到:
+能够通过 $x_0$ 和 $\beta$ 快速得到 $x_t$ 对后续diffusion model的推断有巨大作用。首先我们假设 $\alpha_t = 1 - \beta_t$ ，并且 $\overline{\alpha_t} = \prod _{i=1}^{t}{\alpha_i}$ ，展开 $x_t$ 可以得到:
 
 $$ x_t = \sqrt{\alpha_t}x_{t-1} + \sqrt{1-\alpha_t}z_1 = \sqrt{\alpha_t}(\sqrt{\alpha_{t-1}}x_{t-2} + \sqrt{1-\alpha_{t-1}}z_2) + \sqrt{1-\alpha_t}z_1 = \sqrt{\alpha_t\alpha_{t-1}}x_{t-2} + (\sqrt{\alpha_t(1-\alpha_{t-1})}z_2 + \sqrt{1-\alpha_t}z_1)$$ 
 
