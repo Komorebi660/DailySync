@@ -51,15 +51,15 @@ $$q(x_{1:T}|x_0) = \prod_{t=1}^{T}{q(x_t|x_{t-1})} = \prod_{t=1}^{T}{\mathcal{N}
 
 能够通过 $x_0$ 和 $\beta$ 快速得到 $x_t$ 对后续diffusion model的推断有巨大作用。首先我们假设 $\alpha_t = 1 - \beta_t$ ，并且 $\overline{\alpha_t} = \prod_{i=1}^{t}{\alpha_i}$ ，展开 $x_t$ 可以得到:
 
-$$ x_t = \sqrt{\alpha_t}x_{t-1} + \sqrt{1-\alpha_t}z_1 = \sqrt{\alpha_t}(\sqrt{\alpha_{t-1}}x_{t-2} + \sqrt{1-\alpha_{t-1}}z_2) + \sqrt{1-\alpha_t}z_1 = \sqrt{\alpha_t\alpha_{t-1}}x_{t-2} + (\sqrt{\alpha_t(1-\alpha_{t-1})}z_2 + \sqrt{1-\alpha_t}z_1)$$ 
+$$ x_t = \sqrt{\alpha_t}x_{t-1} + \sqrt{1-\alpha_t}\epsilon_1 = \sqrt{\alpha_t}(\sqrt{\alpha_{t-1}}x_{t-2} + \sqrt{1-\alpha_{t-1}}\epsilon_2) + \sqrt{1-\alpha_t}\epsilon_1 = \sqrt{\alpha_t\alpha_{t-1}}x_{t-2} + (\sqrt{\alpha_t(1-\alpha_{t-1})}\epsilon_2 + \sqrt{1-\alpha_t}\epsilon_1)$$ 
 
-其中 $z_1, z_2 \sim \mathcal{N}(0, \mathbf{I})$, 根据正态分布的性质, 即 $\mathcal{N}(0, \sigma_1^2\mathbf{I}) + \mathcal{N}(0, \sigma_2^2\mathbf{I}) \sim \mathcal{N}(0, (\sigma_1^2+\sigma_2^2)\mathbf{I})$ 可以得到:
+其中 $\epsilon_1, \epsilon_2 \sim \mathcal{N}(0, \mathbf{I})$, 根据正态分布的性质, 即 $\mathcal{N}(0, \sigma_1^2\mathbf{I}) + \mathcal{N}(0, \sigma_2^2\mathbf{I}) \sim \mathcal{N}(0, (\sigma_1^2+\sigma_2^2)\mathbf{I})$ 可以得到:
 
-$$ x_t = \sqrt{\alpha_t\alpha_{t-1}}x_{t-2} + \sqrt{1-\alpha_t\alpha_{t-1}}\overline{z_2} \qquad (\overline{z_2} \sim \mathcal{N}(0, \mathbf{I}))$$ 
+$$ x_t = \sqrt{\alpha_t\alpha_{t-1}}x_{t-2} + \sqrt{1-\alpha_t\alpha_{t-1}}\overline{\epsilon_2} \qquad (\overline{\epsilon_2} \sim \mathcal{N}(0, \mathbf{I}))$$ 
 
 依次展开, 可以得到:
 
-$$ x_t = \sqrt{\overline{\alpha_t}}\ x_0 + \sqrt{1-\overline{\alpha_t}}\ \overline{z_t} \qquad (\overline{z_t} \sim \mathcal{N}(0, \mathbf{I}))$$ 
+$$ x_t = \sqrt{\overline{\alpha_t}}\ x_0 + \sqrt{1-\overline{\alpha_t}}\ \overline{\epsilon_t} \qquad (\overline{\epsilon_t} \sim \mathcal{N}(0, \mathbf{I}))$$ 
 
 因此，任意时刻 $x_t$ 满足 $q(x_t | x_0) = \mathcal{N}(x_t; \sqrt{\overline{\alpha_t}}x_0, (1-\overline{\alpha_t})\mathbf{I})$.
 
@@ -72,19 +72,52 @@ $$ x_t = \sqrt{\overline{\alpha_t}}\ x_0 + \sqrt{1-\overline{\alpha_t}}\ \overli
 </div>
 </br>
 
-但实际上 $q(x_{t-1}|x_t)$ 难以显示地求解，因此我们可以利用神经网络来学习这一分布 $p_\theta(x_{t-1}|x_t)$ , 其中, $\theta$ 是神经网络的超参。
+但实际上 $q(x_{t-1}|x_t)$ 难以显示地求解，因此我们可以利用神经网络来学习这一分布 $p_\theta(x_{t-1}|x_t)$ , 其中 $\theta$ 是神经网络的超参。
 
 $$p_\theta(x_{t-1}|x_t) = \mathcal{N}(x_{t-1}; \mu_\theta(x_t, t), \Sigma_\theta(x_t, t))$$
 
 $$p_\theta(x_{0:T}) = p(x_T)\prod_{t=T}^{1}{p_\theta(x_{t-1}|x_t)} = p(x_T)\prod_{t=T}^{1}{\mathcal{N}(x_{t-1}; \mu_\theta(x_t, t), \Sigma_\theta(x_t, t))}$$
 
-虽然我们无法得到逆转分布 $q(x_{t-1}|x_t)$ , 但是在训练过程中给定 $x_0$ , 我们可以利用贝叶斯公式求解 $q(x_{t-1}|x_t, x_0)$.
+训练过程就是学习上面公式中的 $\mu_\theta(x_t, t)$ 和 $\Sigma_\theta(x_t, t)$ . 虽然我们无法得到逆转分布 $q(x_{t-1}|x_t)$ , 但是在训练过程中给定 $x_0$ , 我们可以利用贝叶斯公式求解 $q(x_{t-1}|x_t, x_0)$.
 
+$$q(x_{t-1}|x_t, x_0) = q(x_t|x_{t-1}, x_0)\frac{q(x_{t-1}|x_0)}{q({x_t|x_0})} = q(x_t|x_{t-1})\frac{q(x_{t-1}|x_0)}{q({x_t|x_0})}$$
 
+这样就将后验概率转化为了已知的先验概率，代入前面推导的公式:
+
+$$q(x_t|x_{t-1}) \propto \exp{\left(-\frac{(x_t-\sqrt{\alpha_t}x_{t-1})^2}{2(1-\alpha_t)}\right)}$$
+
+$$q(x_{t-1}|x_0) \propto \exp{\left(-\frac{(x_{t-1}-\sqrt{\overline{\alpha_{t-1}}}x_0)^2}{2(1-\overline{\alpha_{t-1}})}\right)}$$
+
+$$q(x_t|x_0) \propto \exp{\left(-\frac{(x_t-\sqrt{\overline{\alpha_t}}x_0)^2}{2(1-\overline{\alpha_t})}\right)}$$
+
+整理可以得到:
+
+$$q(x_{t-1}|x_t, x_0) \sim \mathcal{N}(x_{t-1};\tilde{\mu_t}(x_t), \tilde{\beta_t}\mathbf{I})$$
+
+其中:
+
+$$\tilde{\mu_t}(x_t) = \frac{1}{\sqrt{\alpha_t}}(x_t - \frac{\beta_t}{\sqrt{1-\overline{\alpha_t}}}\overline{\epsilon_t})$$
+
+$$\tilde{\beta_t} = \frac{1-\overline{\alpha_{t-1}}}{1-\overline{\alpha_t}}\beta_t \approx \beta_t$$
+
+以上推导的 $\tilde{\mu_t}(x_t)$ 可视为`ground truth`，而我们将通过神经网络学习到 $\mu_\theta(x_t, t)$ , 本质上也就是学习噪声 $\epsilon_\theta(x_t, t)$:
+
+$$\mu_\theta(x_t, t) = \frac{1}{\sqrt{\alpha_t}}(x_t - \frac{\beta_t}{\sqrt{1-\overline{\alpha_t}}}\epsilon_\theta(x_t, t))$$
 
 ### Train
 
-训练过程就是学习上面公式中的 $\mu_\theta(x_t, t)$ 和 $\Sigma_\theta(x_t, t)$ , diffusion使用极大似然估计来找到逆扩散过程中马尔科夫链转换的概率分布。
+训练过程就是学习上面公式中的 $\mu_\theta(x_t, t)$ 和 $\Sigma_\theta(x_t, t)$ , 进一步也就是学习噪声 $\epsilon_\theta(x_t, t)$. Diffusion使用极大似然估计来找到逆扩散过程中马尔科夫链转换的概率分布。
+
+$$\mathcal{L} = \mathbb{E}_{q(x_0)}[-\log p_\theta(x_0)]$$
+
+求模型的极大似然估计，等同于求解最小化负对数似然的变分上限 $\mathcal{L}_{vlb}$:
+
+$$\mathcal{L} = \mathbb{E}_{q(x_0)}[-\log p_\theta(x_0)] \leq \mathbb{E}_{q(x_{0:T})}\left[\log\frac{q(x_{1:T}|x_0)}{p_\theta(x_{0:T})}\right] := \mathcal{L}_{vlb}$$
+
+进一步表示为KL散度(`KL散度是一种不对称统计距离度量，用于衡量一个概率分布P与另外一个概率分布Q的差异程度`):
+
+$$\mathcal{L}_{vlb} = \mathbb{E}_{q(x_{0:T})}\left[\log\frac{q(x_{1:T}|x_0)}{p_\theta(x_{0:T})}\right]$$
+$$\qquad\qquad\qquad\qquad  = \mathbb{E}_{q(x_{0:T})}\left[\log\frac{\prod_{t=1}^{T}q(x_t|x_{t-1})}{p_\theta(x_T)\prod_{t=1}^{T}p_\theta(x_{t-1}|x_t)}\right]$$
 
 ### Sample
 
