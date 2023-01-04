@@ -1,5 +1,18 @@
 # Diffusion
 
+- [Diffusion](#diffusion)
+  - [生成模型对比](#生成模型对比)
+    - [GAN](#gan)
+    - [VAE](#vae)
+    - [Flow Model](#flow-model)
+    - [Diffusion Model](#diffusion-model)
+  - [扩散模型](#扩散模型)
+    - [Forward](#forward)
+    - [Reverse](#reverse)
+    - [Train](#train)
+    - [Sample](#sample)
+  - [Reference](#reference)
+
 常见的生成模型包含[GAN](http://papers.nips.cc/paper/5423-generative-adversarial-nets.pdf)、[VAE](https://arxiv.org/abs/1312.6114)、[Flow Models](https://proceedings.mlr.press/v97/ho19a.html)等等, 所谓生成模型, 就是给一组随机噪声, 通过某种概率模型下的变换, 输出一些具有一定语义信息的数据(比如图像、文本等)。Diffusion Model也是一种生成模型, 2020年[DDPM](https://hojonathanho.github.io/diffusion/)的发表使得图像生成领域的很多工作都开始转向Diffusion Model。
 
 ## 生成模型对比
