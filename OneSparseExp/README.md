@@ -344,6 +344,12 @@ Accuracy部分的验证需要在**Windows Python3.9**环境下进行, 代码见[
 python -u eval_trec.py --trec_path "path-to-search-result" --qrels_path "./qrels.dev.small.tsv" --output_path "./results.tsv"
 ```
 
+需要注意的是，输出文件的格式为:
+
+```
+{qid} 0 {pid} {rank} {score} IndriQueryLik
+```
+
 Latency计算的代码见[这里](./Evaluation/eval_latency.py):
 
 ```bash
