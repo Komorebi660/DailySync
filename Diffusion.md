@@ -112,13 +112,15 @@ $$\mathcal{L} = \mathbb{E}_{q(x_0)}[-\log p_\theta(x_0)]$$
 
 求模型的极大似然估计，等同于求解最小化负对数似然的变分上限 $\mathcal{L}_{vlb}$:
 
-$$\mathcal{L} = \mathbb{E}_{q(x_0)}[-\log p_\theta(x_0)] \leq \mathbb{E}_{q(x_{0 : T})}\left[\log\frac{q(x_{1 : T}|x_0)}{p_\theta(x_{0 : T})}\right] := \mathcal{L}_{vlb}$$
+$$\mathcal{L} = \mathbb{E}_{q(x_0)}[-\log p_\theta(x_0)] \leq \mathbb{E}_{q(x_{0\ :\ T})}\left[\log\frac{q(x_{1:T}|x_0)}{p_\theta(x_{0:T})}\right] := \mathcal{L}_{vlb}$$
 
 进一步表示为KL散度(`KL散度是一种不对称统计距离度量，用于衡量一个概率分布P与另外一个概率分布Q的差异程度`):
 
-$$\mathcal{L}_{vlb} = \mathbb{E}_{q(x_{0:T})}\left[\log\frac{q(x_{1:T}|x_0)}{p_\theta(x_{0 : T})}\right]$$
+$$\mathcal{L}_{vlb} = \mathbb{E}_{q(x_{0\ :\ T})}\left[\log\frac{q(x_{1:T}|x_0)}{p_\theta(x_{0:T})}\right]$$
 
-$$\qquad\qquad\qquad\qquad  = \mathbb{E}_{q(x_{0 : T})}\left[\log\frac{\prod_{t=1}^{T}q(x_t|x_{t-1})}{p_\theta(x_T)\prod_{t=1}^{T}p_\theta(x_{t-1}|x_t)}\right]$$
+$$\qquad\qquad\qquad\quad\ \ \  = \mathbb{E}_{q(x_{0\ :\ T})}\left[\log\frac{\prod_{t=1}^{T}{q(x_t|x_{t-1})}}{p_\theta(x_T)\prod_{t=1}^{T}{p_\theta(x_{t-1}|x_t)}}\right]$$
+
+$$\qquad\qquad\qquad\qquad\quad  = \mathbb{E}_{q(x_{0\ :\ T})}\left[-\log p_\theta(x_T) + \sum_{t=1}^{T}{\frac{q(x_t|x_{t-1})}{p_\theta(x_{t-1}|x_t)}}\right]$$
 
 ### Sample
 
