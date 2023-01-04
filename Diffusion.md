@@ -53,7 +53,7 @@ $$q(x_{1:T}|x_0) = \prod_{t=1}^{T}{q(x_t|x_{t-1})} = \prod_{t=1}^{T}{\mathcal{N}
 
 能够通过 $x_0$ 和 $\beta$ 快速得到 $x_t$ 对后续diffusion model的推断有巨大作用。首先我们假设 $\alpha_t = 1 - \beta_t$ ，并且 $\overline{\alpha_t} = \prod_{i=1}^{t}{\alpha_i}$ ，展开 $x_t$ 可以得到:
 
-$$ x_t = \sqrt{\alpha_t}x_{t-1} + \sqrt{1-\alpha_t}z_1 \qquad\qquad\qquad\qquad\qquad\qquad\quad \\ = \sqrt{\alpha_t}(\sqrt{\alpha_{t-1}}x_{t-2} + \sqrt{1-\alpha_{t-1}}z_2) + \sqrt{1-\alpha_t}z_1 \qquad \\ = \sqrt{\alpha_t\alpha_{t-1}}x_{t-2} + (\sqrt{\alpha_t(1-\alpha_{t-1})}z_2 + \sqrt{1-\alpha_t}z_1) \quad $$ 
+$$ x_t = \sqrt{\alpha_t}x_{t-1} + \sqrt{1-\alpha_t}z_1 = \sqrt{\alpha_t}(\sqrt{\alpha_{t-1}}x_{t-2} + \sqrt{1-\alpha_{t-1}}z_2) + \sqrt{1-\alpha_t}z_1 = \sqrt{\alpha_t\alpha_{t-1}}x_{t-2} + (\sqrt{\alpha_t(1-\alpha_{t-1})}z_2 + \sqrt{1-\alpha_t}z_1)$$ 
 
 其中 $z_1, z_2 \sim \mathcal{N}(0, \mathbf{I})$, 根据正态分布的性质, 即 $\mathcal{N}(0, \sigma_1^2\mathbf{I}) + \mathcal{N}(0, \sigma_2^2\mathbf{I}) \sim \mathcal{N}(0, (\sigma_1^2+\sigma_2^2)\mathbf{I})$ 可以得到:
 
