@@ -104,6 +104,10 @@ $$\tilde{\beta_t} = \frac{1-\overline{\alpha_{t-1}}}{1-\overline{\alpha_t}}\beta
 
 $$\mu_\theta(x_t, t) = \frac{1}{\sqrt{\alpha_t}}(x_t - \frac{\beta_t}{\sqrt{1-\overline{\alpha_t}}}\epsilon_\theta(x_t, t))$$
 
+因此:
+
+$$p_\theta(x_{t-1}|x_t) = \frac{1}{\sqrt{\alpha_t}}(x_t - \frac{\beta_t}{\sqrt{1-\overline{\alpha_t}}}\epsilon_\theta(x_t, t)) + \frac{1-\overline{\alpha_{t-1}}}{1-\overline{\alpha_t}}\beta_tz \qquad z \sim \mathcal{N}(0, \mathbf{I}))$$
+
 ### Train
 
 训练过程就是学习上面公式中的 $\mu_\theta(x_t, t)$ 和 $\Sigma_\theta(x_t, t)$ , 进一步也就是学习噪声 $\epsilon_\theta(x_t, t)$. Diffusion使用极大似然估计来找到逆扩散过程中马尔科夫链转换的概率分布。
@@ -116,9 +120,59 @@ $$\mathcal{L} = \mathbb{E}_{q(x_0)}[-\log p_\theta(x_0)] \leq \mathbb{E}_{q(x_{0
 
 进一步表示为KL散度(`KL散度是一种不对称统计距离度量，用于衡量一个概率分布P与另外一个概率分布Q的差异程度`):
 
-$$\mathcal{L}_{vlb} = \mathbb{E}_{q(x_{0\ :\ T})}\left[\log\frac{q(x_{1:T}|x_0)}{p_\theta(x_{0:T})}\right] = \mathbb{E}_{q(x_{0\ :\ T})}\left[\log\frac{\prod_{t=1}^{T}{q(x_t|x_{t-1})}}{p_\theta(x_T)\prod_{t=1}^{T}{p_\theta(x_{t-1}|x_t)}}\right] = \mathbb{E}_{q(x_{0\ :\ T})}\left[-\log p_\theta(x_T) + \sum_{t=1}^{T}{\log \frac{q(x_t|x_{t-1})}{p_\theta(x_{t-1}|x_t)}}\right] = \mathbb{E}_{q(x_{0\ :\ T})}\left[-\log p_\theta(x_T) + \sum_{t=2}^{T}{\log \left(\frac{q(x_{t-1}|x_t, x_0)}{p_\theta(x_{t-1}|x_t)} \frac{q(x_t|x_0)}{q(x_{t-1}|x_0)} \right)} + \log \frac{q(x_1|x_0)}{p_\theta(x_0|x_1)} \right] = \mathbb{E}_{q(x_{0\ :\ T})}\left[-\log p_\theta(x_T) + \sum_{t=2}^{T}{\log \frac{q(x_{t-1}|x_t, x_0)}{p_\theta(x_{t-1}|x_t)}} +\sum_{t=2}^{T}{\log \frac{q(x_t|x_0)}{q(x_{t-1}|x_0)}} + \log \frac{q(x_1|x_0)}{p_\theta(x_0|x_1)} \right] = \mathbb{E}_{q(x_{0\ :\ T})}\left[-\log p_\theta(x_T) + \sum_{t=2}^{T}{\log \frac{q(x_{t-1}|x_t, x_0)}{p_\theta(x_{t-1}|x_t)}} + \log \frac{q(x_T|x_0)}{q(x_1|x_0)} + \log \frac{q(x_1|x_0)}{p_\theta(x_0|x_1)} \right] = \mathbb{E}_{q(x_{0\ :\ T})}\left[\log \frac{q(x_T|x_0)}{p_\theta(x_T)} + \sum_{t=2}^{T}{\log \frac{q(x_{t-1}|x_t, x_0)}{p_\theta(x_{t-1}|x_t)}} - \log p_\theta(x_0|x_1)\right]$$
+$$\mathcal{L}_{vlb} = \mathbb{E}_{q(x_{0\ :\ T})}\left[\log\frac{q(x_{1:T}|x_0)}{p_\theta(x_{0:T})}\right] = \mathbb{E}_{q(x_{0\ :\ T})}\left[\log\frac{\prod_{t=1}^{T}{q(x_t|x_{t-1})}}{p_\theta(x_T)\prod_{t=1}^{T}{p_\theta(x_{t-1}|x_t)}}\right] = \mathbb{E}_{q(x_{0\ :\ T})}\left[-\log p_\theta(x_T) + \sum_{t=1}^{T}{\log \frac{q(x_t|x_{t-1})}{p_\theta(x_{t-1}|x_t)}}\right]$$
+
+$$ = \mathbb{E}_{q(x_{0\ :\ T})}\left[-\log p_\theta(x_T) + \sum_{t=2}^{T}{\log \left(\frac{q(x_{t-1}|x_t, x_0)}{p_\theta(x_{t-1}|x_t)} \frac{q(x_t|x_0)}{q(x_{t-1}|x_0)} \right)} + \log \frac{q(x_1|x_0)}{p_\theta(x_0|x_1)} \right] = \mathbb{E}_{q(x_{0\ :\ T})}\left[-\log p_\theta(x_T) + \sum_{t=2}^{T}{\log \frac{q(x_{t-1}|x_t, x_0)}{p_\theta(x_{t-1}|x_t)}} +\sum_{t=2}^{T}{\log \frac{q(x_t|x_0)}{q(x_{t-1}|x_0)}} + \log \frac{q(x_1|x_0)}{p_\theta(x_0|x_1)} \right]$$
+
+$$ = \mathbb{E}_{q(x_{0\ :\ T})}\left[-\log p_\theta(x_T) + \sum_{t=2}^{T}{\log \frac{q(x_{t-1}|x_t, x_0)}{p_\theta(x_{t-1}|x_t)}} + \log \frac{q(x_T|x_0)}{q(x_1|x_0)} + \log \frac{q(x_1|x_0)}{p_\theta(x_0|x_1)} \right] = \mathbb{E}_{q(x_{0\ :\ T})}\left[\log \frac{q(x_T|x_0)}{p_\theta(x_T)} + \sum_{t=2}^{T}{\log \frac{q(x_{t-1}|x_t, x_0)}{p_\theta(x_{t-1}|x_t)}} - \log p_\theta(x_0|x_1)\right]$$
+
+由于前向 $q$ 没有可学习参数，而 $x_T$ 则是纯高斯噪声, 因此上式第一项为一常量，可以忽略; 第三项是由连续变为离散的熵，对于一般的连续情况可以合并进第二项, 因此:
+
+$$\mathcal{L}_{vlb} = \mathbb{E}_{q(x_{0\ :\ T})}\left[\sum_{t=1}^{T}{\log \frac{q(x_{t-1}|x_t, x_0)}{p_\theta(x_{t-1}|x_t)}}\right] + C := \sum_{t=1}^{T}{\mathcal{L}_t}+C$$
+
+$\mathcal{L}_t$ 是两个高斯分布的KL散度。根据[多元高斯分布的KL散度求解公式](https://link.zhihu.com/?target=https%3A//en.wikipedia.org/wiki/Kullback%25E2%2580%2593Leibler_divergence%23Multivariate_normal_distributions):
+
+$$\mathcal{L}_t = \mathbb{E}_{q(x_{0\ :\ T})}\left[ \frac{||\tilde{\mu_t}(x_t)-\mu_\theta(x_t, t)||^2}{2||\Sigma_\theta(x_t, t)||^2} \right] + C^\prime$$
+
+带入上面推导的公式，进一步化简得到:
+
+$$\mathcal{L}_t^{simple} = \mathbb{E}_{x_0, t, \epsilon}\left[||\epsilon-\epsilon_\theta(\sqrt{\overline{\alpha_t}}x_0+\sqrt{1-\overline{\alpha_t}}\epsilon, t)||^2 \right]$$
+
+训练的核心就是最小化模型预测噪声 $\epsilon_\theta$ 与实际噪声 $\epsilon$. 训练过程的伪代码如下:
+
+```python
+x0 = get_data()
+epsilon = torch.randn_like(x0.shape)
+t = torch.randint()
+
+x = x0 * torch.sqrt(alpha_bar[t]) + epsilon * torch.sqrt(1 - alpha_bar[t])
+
+output = model(x)
+
+loss = torch.norm(e - output)**2
+
+loss.backward()
+```
 
 ### Sample
+
+采样过程就是所谓的推断过程，给定一个噪声图片 $x_T$ ，通过公式:
+
+$$p_\theta(x_{t-1}|x_t) = \mathcal{N}(x_{t-1}; \mu_\theta(x_t, t), \Sigma_\theta(x_t, t)) = \frac{1}{\sqrt{\alpha_t}}(x_t - \frac{\beta_t}{\sqrt{1-\overline{\alpha_t}}}\epsilon_\theta(x_t, t)) + \frac{1-\overline{\alpha_{t-1}}}{1-\overline{\alpha_t}}\beta_tz \qquad z \sim \mathcal{N}(0, \mathbf{I}))$$
+
+从 $t=T$ 开始逐步去噪获得图像 $x_0$ . 算法伪代码如下:
+
+```python
+x_T = torch,randn_like(x0.shape)
+
+for t in range(T, 0, -1):
+    e = model(x_T, t)
+    mu = 1/torch.sqrt(alpha_bar[t]) * (x_T - beta[t]/torch.sqrt(1-alpha_bar[t]) * e)
+    sigma = torch.sqrt(1-alpha_bar[t-1])/(1-alpha_bar[t]) * beta[t]
+    x_T = mu + sigma * torch.randn_like(x0.shape)
+
+return x_T
+```
 
 ## Reference
 
