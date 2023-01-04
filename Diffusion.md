@@ -122,11 +122,11 @@ $$\mathcal{L} = \mathbb{E}_{q(x_0)}[-\log p_\theta(x_0)] \leq \mathbb{E}_{q(x_{0
 
 $$\mathcal{L}_{vlb} = \mathbb{E}_{q(x_{0\ :\ T})}\left[\log\frac{q(x_{1:T}|x_0)}{p_\theta(x_{0:T})}\right] = \mathbb{E}_{q(x_{0\ :\ T})}\left[\log \left(\prod_{t=1}^{T}{q(x_t|x_{t-1})}\right) / \left(p_\theta(x_T)\prod_{t=1}^{T}{p_\theta(x_{t-1}|x_t)}\right)\right]$$
 
-$$= \mathbb{E}_{q(x_{0\ :\ T})}\left[-\log p_\theta(x_T) + \sum_{t=1}^{T}{\log \frac{q(x_t|x_{t-1})}{p_\theta(x_{t-1}|x_t)}}\right] \qquad\qquad\qquad\qquad\qquad\qquad\qquad$$
+$$= \mathbb{E}_{q(x_{0\ :\ T})}\left[-\log p_\theta(x_T) + \sum_{t=1}^{T}{\log \frac{q(x_t|x_{t-1})}{p_\theta(x_{t-1}|x_t)}}\right] \qquad\qquad\qquad\qquad\qquad\qquad\qquad\qquad$$
 
-$$ = \mathbb{E}_{q(x_{0\ :\ T})}\left[-\log p_\theta(x_T) + \sum_{t=2}^{T}{\log \left(\frac{q(x_{t-1}|x_t, x_0)}{p_\theta(x_{t-1}|x_t)} \frac{q(x_t|x_0)}{q(x_{t-1}|x_0)} \right)} + \log \frac{q(x_1|x_0)}{p_\theta(x_0|x_1)} \right] \qquad$$
+$$ = \mathbb{E}_{q(x_{0\ :\ T})}\left[-\log p_\theta(x_T) + \sum_{t=2}^{T}{\log \left(\frac{q(x_{t-1}|x_t, x_0)}{p_\theta(x_{t-1}|x_t)} \frac{q(x_t|x_0)}{q(x_{t-1}|x_0)} \right)} + \log \frac{q(x_1|x_0)}{p_\theta(x_0|x_1)} \right] \quad$$
 
-$$\qquad = \mathbb{E}_{q(x_{0\ :\ T})}\left[-\log p_\theta(x_T) + \sum_{t=2}^{T}{\log \frac{q(x_{t-1}|x_t, x_0)}{p_\theta(x_{t-1}|x_t)}} +\sum_{t=2}^{T}{\log \frac{q(x_t|x_0)}{q(x_{t-1}|x_0)}} + \log \frac{q(x_1|x_0)}{p_\theta(x_0|x_1)} \right]$$
+$$\quad = \mathbb{E}_{q(x_{0\ :\ T})}\left[-\log p_\theta(x_T) + \sum_{t=2}^{T}{\log \frac{q(x_{t-1}|x_t, x_0)}{p_\theta(x_{t-1}|x_t)}} +\sum_{t=2}^{T}{\log \frac{q(x_t|x_0)}{q(x_{t-1}|x_0)}} + \log \frac{q(x_1|x_0)}{p_\theta(x_0|x_1)} \right]$$
 
 $$ = \mathbb{E}_{q(x_{0\ :\ T})}\left[-\log p_\theta(x_T) + \sum_{t=2}^{T}{\log \frac{q(x_{t-1}|x_t, x_0)}{p_\theta(x_{t-1}|x_t)}} + \log \frac{q(x_T|x_0)}{q(x_1|x_0)} + \log \frac{q(x_1|x_0)}{p_\theta(x_0|x_1)} \right]\quad$$
 
