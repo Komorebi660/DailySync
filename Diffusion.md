@@ -78,6 +78,10 @@ $$p_\theta(x_{t-1}|x_t) = \mathcal{N}(x_{t-1}; \mu_\theta(x_t, t), \Sigma_\theta
 
 $$p_\theta(x_{0:T}) = p(x_T)\prod_{t=T}^{1}{p_\theta(x_{t-1}|x_t)} = p(x_T)\prod_{t=T}^{1}{\mathcal{N}(x_{t-1}; \mu_\theta(x_t, t), \Sigma_\theta(x_t, t))}$$
 
+虽然我们无法得到逆转分布 $q(x_{t-1}|x_t)$ , 但是在训练过程中给定 $x_0$ , 我们可以利用贝叶斯公式求解 $q(x_{t-1}|x_t, x_0)$.
+
+
+
 ### Train
 
 训练过程就是学习上面公式中的 $\mu_\theta(x_t, t)$ 和 $\Sigma_\theta(x_t, t)$ , diffusion使用极大似然估计来找到逆扩散过程中马尔科夫链转换的概率分布。
