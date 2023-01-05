@@ -1,5 +1,15 @@
 # Usage of Python
 
+- [Usage of Python](#usage-of-python)
+  - [data load \& store](#data-load--store)
+    - [`.tsv`](#tsv)
+    - [`.pt`](#pt)
+    - [`.bin`](#bin)
+  - [Basic Data Structure](#basic-data-structure)
+    - [dict](#dict)
+    - [set](#set)
+  - [numpy](#numpy)
+
 ## data load & store
 
 ### `.tsv`
