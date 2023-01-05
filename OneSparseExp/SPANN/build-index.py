@@ -5,14 +5,6 @@ import numpy as np
 sys.path.append('/SPTAG/Release/')
 import SPTAG
 
-
-def transform(x):
-    norms = np.linalg.norm(x, axis=1)**2
-    phi = norms.max()
-    extracol = np.sqrt(phi - norms)
-    return np.hstack((extracol.reshape(-1, 1), x)).astype(np.float32)
-
-
 corpus = []
 for i in range(10):
     with open("../../embedding_data/corpus/split0%d.pt" % i, "rb") as f:
@@ -22,9 +14,6 @@ for i in range(10):
     print("finish %d" % i)
 
 corpus = np.vstack(corpus)
-print("Transform Begin !!!")
-corpus = transform(corpus)
-print("Transform End !!!")
 vector_number, vector_dim = corpus.shape
 print(vector_number, vector_dim)
 

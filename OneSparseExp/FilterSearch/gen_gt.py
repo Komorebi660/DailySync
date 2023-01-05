@@ -2,14 +2,6 @@ import pickle
 import csv
 import numpy as np
 
-
-def transform(x):
-    norms = np.linalg.norm(x, axis=1)**2
-    phi = norms.max()
-    extracol = np.sqrt(phi - norms)
-    return np.hstack((extracol.reshape(-1, 1), x)).astype(np.float32)
-
-
 print("Load Embedding Begin !!!")
 corpus = []
 for i in range(10):
@@ -19,7 +11,6 @@ for i in range(10):
     f.close()
     print("finish %d" % i)
 corpus = np.vstack(corpus)
-corpus = transform(corpus)
 print("Load Embedding End !!!")
 
 print("Load Location Begin !!!")
@@ -40,17 +31,16 @@ with open("../embedding_data/query/query_dev_small.pt", 'rb') as f_embedding, \
     idx = 0
     for [qid, loc, _] in tsvreader_query:
         query_embedding = np.array(query_embeddings[idx].tolist(), dtype=np.float32)
-        query_embedding = np.hstack((0.0, query_embedding)).astype(np.float32)  # transform
-        #find the index of loc in location
+        # find the index of loc in location
         index = np.where(location == loc)[0]
-        #filter passages
+        # filter passages
         candidate_corpus = corpus[index]
-        #calculate scores
+        # calculate scores
         score_list = np.linalg.norm(candidate_corpus-query_embedding, axis=1)**2
-        #sort
+        # sort
         sorted_index = np.argsort(score_list)
         for i in range(100):
-            #docid start from 0
+            # docid start from 0
             f_result.write(f"{qid}\t{index[sorted_index[i]]}\t{i+1}\t{100.0-score_list[sorted_index[i]]}\n")
         idx += 1
         if idx % 100 == 0:

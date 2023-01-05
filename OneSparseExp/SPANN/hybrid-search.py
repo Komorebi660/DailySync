@@ -42,7 +42,6 @@ def search_with_inverted_index(query):
 def search_with_spann(embedding):
     """return a tuple(docid, rank, score)
     """
-    embedding = np.hstack((0.0, embedding)).astype(np.float32)
     result = index.Search(embedding, 200)
     return [(result[0][i], i+1, 100.0-result[1][i]) for i in range(200)]
 

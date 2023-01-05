@@ -32,7 +32,7 @@ def create_index(index_name):
             "properties": {
                 "embedding": {
                     "type": "dense_vector",
-                    "dims": 768,
+                    "dims": 769,
                     "index": True,
                     "index_options": {
                         "type": "hnsw",

@@ -5,6 +5,7 @@
     - [inner product -\> l2 norm](#inner-product---l2-norm)
   - [Run Elasticsearch](#run-elasticsearch)
     - [docker安装](#docker安装)
+    - [demo](#demo)
     - [build index](#build-index)
     - [search](#search)
     - [utils](#utils)
@@ -44,8 +45,8 @@ with open("xxx.tsv", "r", encoding="utf8") as f:
 
 接下来需要获取embedding数据, 可以用`scp`传输到服务器上。embedding数据包含两部分:
 
-- `corpus`: 均匀拆分成了10份, 从`split00.pt`到`split09.pt`, 格式为`[embedding_matrix, pid_list]`, embedding用ar2g生成, 768维, inner product.
-- `query`: 格式同上, `embedding_matrix`是6980*768的矩阵。
+- `corpus`: 均匀拆分成了10份, 从`split00.pt`到`split09.pt`, 格式为`[embedding_matrix, pid_list]`, embedding用ar2g生成, 原来是`768维, inner product`, 变换为`769维, L2 norm`.
+- `query`: 格式同上, `embedding_matrix`是6980*769的矩阵。
 
 读取`pt`文件的代码如下:
 
@@ -65,7 +66,10 @@ inner product不满足三角不等式, 在query时可能会出现奇怪情况, [
 ```python
 # for corpus embeddings
 def transform(x): 
-    '''x: np.array, shape=(8841823, 768)'''
+    '''
+      x:      np.array, shape=(8841823, 768)
+      output: np.array, shape=(8841823, 769)
+    '''
     norms = np.linalg.norm(x, axis=1)**2
     phi = norms.max()
     extracol = np.sqrt(phi - norms)
@@ -73,7 +77,10 @@ def transform(x):
 
 # for query embeddings
 def transform(x): 
-    '''x: np.array, shape=(6980, 768)'''
+    '''
+      x:      np.array, shape=(6980, 768)
+      output: np.array, shape=(6980, 769)
+    '''
     extracol = np.zeros(x.shape[0]).astype(np.float32)
     return np.hstack((extracol.reshape(-1, 1), x)).astype(np.float32)
 ```
@@ -132,6 +139,17 @@ payload = {
 
 response = requests.request("PUT or POST", url, headers=headers, data=json.dumps(payload), verify=cert, auth=(user, password))
 assert response.ok
+```
+
+### demo
+
+demo代码见[此](./Elasticsearch/demo.py), 该代码构建了一个包含`text`和`embedding`的index, 且插入了两条数据, 模拟了三类搜索.
+
+```bash
+# build index
+python3 test.py --create-index true --index-name my-index
+# search
+python3 test.py --create-index false --index-name my-index
 ```
 
 ### build index
@@ -353,7 +371,7 @@ python -u eval_trec.py --trec_path "path-to-search-result" --qrels_path "./qrels
 Latency计算的代码见[这里](./Evaluation/eval_latency.py):
 
 ```bash
-python3 eval_latency.py
+python3 eval_latency.py --path "qrels-latency.tsv"
 ```
 
 ## Filter Search

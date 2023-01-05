@@ -23,7 +23,6 @@ def load_passage_filter(path):
 def search_with_spann(embedding, k):
     """return a tuple(docid, rank, score)
     """
-    embedding = np.hstack((0.0, embedding)).astype(np.float32)
     result = index.Search(embedding, k)
     return [(result[0][i], 100.0-result[1][i]) for i in range(k)]
 

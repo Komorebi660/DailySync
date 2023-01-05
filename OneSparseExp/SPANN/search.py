@@ -15,8 +15,6 @@ with open("../../embedding_data/query/query_dev_small.pt", 'rb') as f, \
         for idx in range(len(ids)):
             qid = int(ids[idx])
             embedding = np.array(embeddings[idx].tolist(), dtype=np.float32)
-            # inner product -> L2
-            embedding = np.hstack((0.0, embedding)).astype(np.float32)
             start = time.time()
             result = index.Search(embedding, 100)
             end = time.time()
