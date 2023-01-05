@@ -11,6 +11,9 @@
     - [Reverse](#reverse)
     - [Train](#train)
     - [Sample](#sample)
+  - [Conditional Diffusion Model](#conditional-diffusion-model)
+    - [Classifier-Guidance](#classifier-guidance)
+    - [Classifier-Free](#classifier-free)
   - [Reference](#reference)
 
 常见的生成模型包含[GAN](http://papers.nips.cc/paper/5423-generative-adversarial-nets.pdf)、[VAE](https://arxiv.org/abs/1312.6114)、[Flow Models](https://proceedings.mlr.press/v97/ho19a.html)等等, 所谓生成模型, 就是给一组随机噪声, 通过某种概率模型下的变换, 输出一些具有一定语义信息的数据(比如图像、文本等)。Diffusion Model也是一种生成模型, 2020年[DDPM](https://hojonathanho.github.io/diffusion/)的发表使得图像生成领域的很多工作都开始转向Diffusion Model。
@@ -87,11 +90,11 @@ $$ x_t = \sqrt{\overline{\alpha_t}}\ x_0 + \sqrt{1-\overline{\alpha_t}}\ \overli
 
 但实际上 $q(x_{t-1}|x_t)$ 难以显示地求解，因此我们可以利用神经网络来学习这一分布 $p_\theta(x_{t-1}|x_t)$ , 其中 $\theta$ 是神经网络的超参。
 
-$$p_\theta(x_{t-1}|x_t) = \mathcal{N}(x_{t-1}; \mu_\theta(x_t, t), \Sigma_\theta(x_t, t))$$
+$$p_\theta(x_{t-1}|x_t) = \mathcal{N}(x_{t-1}; \mu_\theta(x_t, t), \sigma_\theta^2(x_t, t)\mathbf{I})$$
 
-$$p_\theta(x_{0:T}) = p(x_T)\prod_{t=T}^{1}{p_\theta(x_{t-1}|x_t)} = p(x_T)\prod_{t=T}^{1}{\mathcal{N}(x_{t-1}; \mu_\theta(x_t, t), \Sigma_\theta(x_t, t))}$$
+$$p_\theta(x_{0:T}) = p(x_T)\prod_{t=T}^{1}{p_\theta(x_{t-1}|x_t)} = p(x_T)\prod_{t=T}^{1}{\mathcal{N}(x_{t-1}; \mu_\theta(x_t, t), \sigma_\theta^2(x_t, t)\mathbf{I})}$$
 
-训练过程就是学习上面公式中的 $\mu_\theta(x_t, t)$ 和 $\Sigma_\theta(x_t, t)$ . 虽然我们无法得到逆转分布 $q(x_{t-1}|x_t)$ , 但是在训练过程中给定 $x_0$ , 我们可以利用贝叶斯公式求解 $q(x_{t-1}|x_t, x_0)$.
+训练过程就是学习上面公式中的 $\mu_\theta(x_t, t)$ 和 $\sigma_\theta(x_t, t)$ . 虽然我们无法得到逆转分布 $q(x_{t-1}|x_t)$ , 但是在训练过程中给定 $x_0$ , 我们可以利用贝叶斯公式求解 $q(x_{t-1}|x_t, x_0)$.
 
 $$q(x_{t-1}|x_t, x_0) = q(x_t|x_{t-1}, x_0)\frac{q(x_{t-1}|x_0)}{q({x_t|x_0})} = q(x_t|x_{t-1})\frac{q(x_{t-1}|x_0)}{q({x_t|x_0})}$$
 
@@ -105,7 +108,7 @@ $$q(x_t|x_0) \propto \exp{\left(-\frac{(x_t-\sqrt{\overline{\alpha_t}}x_0)^2}{2(
 
 整理可以得到:
 
-$$q(x_{t-1}|x_t, x_0) \sim \mathcal{N}(x_{t-1};\tilde{\mu_t}(x_t), \tilde{\beta_t}\mathbf{I})$$
+$$q(x_{t-1}|x_t, x_0) = \mathcal{N}(x_{t-1};\tilde{\mu_t}(x_t), \tilde{\beta_t}\mathbf{I})$$
 
 其中:
 
@@ -117,13 +120,13 @@ $$\tilde{\beta_t} = \frac{1-\overline{\alpha_{t-1}}}{1-\overline{\alpha_t}}\beta
 
 $$\mu_\theta(x_t, t) = \frac{1}{\sqrt{\alpha_t}}(x_t - \frac{\beta_t}{\sqrt{1-\overline{\alpha_t}}}\epsilon_\theta(x_t, t))$$
 
-因此:
+因此模型预测的 $x_{t-1}$ 可以写成:
 
-$$p_\theta(x_{t-1}|x_t) = \frac{1}{\sqrt{\alpha_t}}(x_t - \frac{\beta_t}{\sqrt{1-\overline{\alpha_t}}}\epsilon_\theta(x_t, t)) + \frac{1-\overline{\alpha_{t-1}}}{1-\overline{\alpha_t}}\beta_tz \qquad z \sim \mathcal{N}(0, \mathbf{I}))$$
+$$x_{t-1}(x_{t}, t; \theta) = \frac{1}{\sqrt{\alpha_t}}(x_t - \frac{\beta_t}{\sqrt{1-\overline{\alpha_t}}}\epsilon_\theta(x_t, t)) + \sigma_\theta(x_t, t)z \qquad z \sim \mathcal{N}(0, \mathbf{I}))$$
 
 ### Train
 
-训练过程就是学习上面公式中的 $\mu_\theta(x_t, t)$ 和 $\Sigma_\theta(x_t, t)$ , 进一步也就是学习噪声 $\epsilon_\theta(x_t, t)$. Diffusion使用极大似然估计来找到逆扩散过程中马尔科夫链转换的概率分布。
+训练过程就是学习上面公式中的 $\mu_\theta(x_t, t)$ 和 $\sigma_\theta(x_t, t)$ , 进一步也就是学习噪声 $\epsilon_\theta(x_t, t)$. Diffusion使用极大似然估计来找到逆扩散过程中马尔科夫链转换的概率分布。
 
 $$\mathcal{L} = \mathbb{E}_{q(x_0)}[-\log p_\theta(x_0)]$$
 
@@ -151,9 +154,9 @@ $$\mathcal{L}_{vlb} = \mathbb{E}_{q(x_{0\ :\ T})}\left[\sum_{t=1}^{T}{\log \frac
 
 $\mathcal{L}_t$ 是两个高斯分布的KL散度。根据[多元高斯分布的KL散度求解公式](https://link.zhihu.com/?target=https%3A//en.wikipedia.org/wiki/Kullback%25E2%2580%2593Leibler_divergence%23Multivariate_normal_distributions):
 
-$$\mathcal{L}_t = \mathbb{E}_{q(x_{0\ :\ T})}\left[ \frac{||\tilde{\mu_t}(x_t)-\mu_\theta(x_t, t)||^2}{2||\Sigma_\theta(x_t, t)||^2} \right] + C^\prime$$
+$$\mathcal{L}_t = \mathbb{E}_{q(x_{0\ :\ T})}\left[ \frac{||\tilde{\mu_t}(x_t)-\mu_\theta(x_t, t)||^2}{2||\sigma_\theta^2(x_t, t)\mathbf{I}||^2} \right] + C^\prime$$
 
-带入上面推导的公式，进一步化简得到:
+代入上面推导的 $\tilde{\mu_t}$ 和 $\mu_\theta$ 计算公式，进一步化简得到:
 
 $$\mathcal{L}_t^{simple} = \mathbb{E}_{x_0, t, \epsilon}\left[||\epsilon-\epsilon_\theta(\sqrt{\overline{\alpha_t}}x_0+\sqrt{1-\overline{\alpha_t}}\epsilon, t)||^2 \right]$$
 
@@ -177,9 +180,9 @@ loss.backward()
 
 采样过程就是所谓的推断过程，给定一个噪声图片 $x_T$ ，通过公式:
 
-$$p_\theta(x_{t-1}|x_t) = \mathcal{N}(x_{t-1}; \mu_\theta(x_t, t), \Sigma_\theta(x_t, t)) = \frac{1}{\sqrt{\alpha_t}}(x_t - \frac{\beta_t}{\sqrt{1-\overline{\alpha_t}}}\epsilon_\theta(x_t, t)) + \frac{1-\overline{\alpha_{t-1}}}{1-\overline{\alpha_t}}\beta_tz \qquad z \sim \mathcal{N}(0, \mathbf{I}))$$
+$$p_\theta(x_{t-1}|x_t) = \mathcal{N}(x_{t-1}; \mu_\theta(x_t, t), \sigma_\theta^2(x_t, t)\mathbf{I}) \sim \frac{1}{\sqrt{\alpha_t}}(x_t - \frac{\beta_t}{\sqrt{1-\overline{\alpha_t}}}\epsilon_\theta(x_t, t)) + \sigma_\theta(x_t, t)z \qquad (z \sim \mathcal{N}(0, \mathbf{I}))$$
 
-从 $t=T$ 开始逐步去噪获得图像 $x_0$ . 算法伪代码如下:
+我们可以近似 $\beta_t \approx \sigma_\theta^2(x_t, t)$ , 因此, 我们就可以利用上面的公式从 $t=T$ 开始逐步去噪获得图像 $x_0$ . 算法伪代码如下:
 
 ```python
 x_T = torch,randn_like(x0.shape)
@@ -187,14 +190,68 @@ x_T = torch,randn_like(x0.shape)
 for t in range(T, 0, -1):
     e = model(x_T, t)
     mu = 1/torch.sqrt(alpha_bar[t]) * (x_T - beta[t]/torch.sqrt(1-alpha_bar[t]) * e)
-    sigma = torch.sqrt(1-alpha_bar[t-1])/(1-alpha_bar[t]) * beta[t]
+    sigma = torch.sqrt(beta[t])
     x_T = mu + sigma * torch.randn_like(x0.shape)
 
 return x_T
 ```
+
+## Conditional Diffusion Model
+
+作为生成模型，扩散模型跟VAE、GAN、flow等模型的发展史很相似，都是先出来了无条件生成，然后有条件生成就紧接而来。无条件生成往往是为了探索效果上限，而有条件生成则更多是应用层面的内容，因为它可以实现根据我们的意愿来控制输出结果。
+
+从方法上来看，条件控制生成的方式分两种：**事后修改(Classifier-Guidance)**和**事前训练(Classifier-Free)**。对于大多数人来说，一个SOTA级别的扩散模型训练成本太大了，而分类器（Classifier）的训练还能接受，所以就想着直接复用别人训练好的无条件扩散模型，用一个分类器来调整生成过程以实现控制生成，这就是事后修改的Classifier-Guidance方案；而对于“财大气粗”的Google、OpenAI等公司来说，它们不缺数据和算力，所以更倾向于往扩散模型的训练过程中就加入条件信号，达到更好的生成效果，这就是事前训练的Classifier-Free方案。
+
+Classifier-Guidance方案最早出自[《Diffusion Models Beat GANs on Image Synthesis》](https://arxiv.org/abs/2105.05233)，最初就是用来实现按类生成; 后来[《More Control for Free! Image Synthesis with Semantic Diffusion Guidance》](https://arxiv.org/abs/2112.05744)推广了 “Classifier” 的概念，使得它也可以按图、按文来生成。Classifier-Guidance方案的训练成本比较低，但是推断成本会高些，而且控制细节上通常没那么到位。
+
+至于Classifier-Free方案，最早出自[《Classifier-Free Diffusion Guidance》](https://arxiv.org/abs/2207.12598)，后来的[Imagen](https://arxiv.org/abs/2205.11487)等吸引人眼球的模型基本上都是以它为基础做的。应该说，Classifier-Free方案本身没什么理论上的技巧，它是条件扩散模型最朴素的方案，出现得晚只是因为重新训练扩散模型的成本较大吧。在数据和算力都比较充裕的前提下，Classifier-Free方案表现出了令人惊叹的细节控制能力。
+
+### Classifier-Guidance
+
+这一方案是在已经训练好的diffusion model上额外添加一个分类器 $p_\phi(y|x_t)$ 用于引导, 其中 $y$ 是条件, $\phi$ 是分类器的参数。这一分类器再被应用前需要先用带噪声的图片 $x_t$ 训练, 具体来说, 可以通过diffusion model对原始图片进行加噪处理(正向传播), 把得到的噪声图片喂给classifier做训练。下面我们主要考虑如何使用这个分类器来引导diffusion生成。
+
+无条件生成过程可以表述为 $p_\theta(x_{t-1}|x_t)$ , 加上条件 $y$ 后可以被写成 $p_\theta(x_{t-1}|x_t, y)$ , 利用贝叶斯公式:
+
+$$p_\theta(x_{t-1}|x_t, y) = \frac{p_\theta(x_{t-1}|x_t)p_\theta(y|x_{t-1},x_t)}{p_\theta(y|x_t)}$$
+
+由于 $x_t$ 只是在 $x_{t-1}$ 基础上添加噪声, 对分类不会有影响, 因此有 $p_\theta(y|x_{t-1},x_t) = p_\theta(y|x_{t-1})$ , 代入得:
+
+$$p_\theta(x_{t-1}|x_t, y) = p_\theta(x_{t-1}|x_t)\frac{p_\theta(y|x_{t-1})}{p_\theta(y|x_t)} = p_\theta(x_{t-1}|x_t)e^{\log p_\theta(y|x_{t-1}) - \log p_\theta(y|x_t)}$$
+
+当 $T$ 足够大时, $x_{t-1}$ 和 $x_t$ 相差很小, 因此 $p_\theta(y|x_{t-1})$ 和 $p_\theta(y|x_t)$ 也相差很小, 故可以对其做泰勒展开:
+
+$$\log p_\theta(y|x_{t-1}) - \log p_\theta(y|x_t) \approx (x_{t-1} - x_t) \nabla_{x_t} \log p_\theta(y|x_t) \approx (x_{t-1} - \mu_\theta(x_t,t)) \nabla_{x_t} \log p_\theta(y|x_t)$$
+
+由于 $p_\theta(x_{t-1}|x_t) \sim \mathcal{N}(x_t; \mu_\theta(x_t, t), \sigma_\theta^2(x_t, t)\mathbf{I}) \propto \exp \left( - \frac{(x_t - \mu_\theta(x_t, t))^2}{2\sigma_\theta^2(x_t, t)} \right)$ , 因此有:
+
+$$p_\theta(x_{t-1}|x_t, y) \propto \exp \left( - \frac{(x_t - \mu_\theta(x_t, t))^2}{2\sigma_\theta^2(x_t, t)} + (x_{t-1} - \mu_\theta(x_t,t)) \nabla_{x_t} \log p_\theta(y|x_t) \right) \propto \exp \left( - \frac{(x_t - \mu_\theta(x_t, t) - \sigma_\theta^2(x_t, t)\nabla_{x_t} \log p_\theta(y|x_t) )^2}{2\sigma_\theta^2(x_t, t)}\right)$$
+
+也即: 
+
+$$p_\theta(x_{t-1}|x_t, y) = \mathcal{N}(x_t; \mu_\theta(x_t, t) + \sigma_\theta^2(x_t, t)\nabla_{x_t} \log p_\theta(y|x_t), \sigma_\theta^2(x_t, t)\mathbf{I}) \sim \frac{1}{\sqrt{\alpha_t}}(x_t - \frac{\beta_t}{\sqrt{1-\overline{\alpha_t}}}\epsilon_\theta(x_t, t)) + \sigma_\theta^2(x_t, t)\nabla_{x_t} \log p_\theta(y|x_t) + \sigma_\theta(x_t, t) z \qquad (z \sim \mathcal{N}(0, \mathbf{I}))$$
+
+与不加条件的情形相比仅仅在均值里多了一项 $\sigma_\theta^2(x_t, t)\nabla_{x_t} \log p_\theta(y|x_t)$ . 在实际sample过程中，用classifier对diffusion model生成的图片 $x_t$ 进行分类，得到预测分数与目标类别的交叉熵，把它对 $x_t$ 求梯度，用梯度引导下一步的生成采样。另外，我们也可以在这一项前面添加调节因子 $\gamma$ 来控制生成图片与 $y$ 的相似性。
+
+### Classifier-Free
+
+这种方法需要对模型进行重新训练，与无条件diffusion model相比，输入除了高斯噪声 $x_T$ 还包含条件向量 $y$ , 相应的公式也要做出调整:
+
+$$\mu_\theta(x_t, t) = \frac{1}{\sqrt{\alpha_t}}(x_t - \frac{\beta_t}{\sqrt{1-\overline{\alpha_t}}}\epsilon_\theta(x_t, t, y))$$
+
+优化目标为:
+
+$$\mathbb{E}_{x_0, y\sim p(x_0, y), t, \epsilon}\left[||\epsilon-\epsilon_\theta(\sqrt{\overline{\alpha_t}}x_0+\sqrt{1-\overline{\alpha_t}}\epsilon, y, t)||^2 \right]$$
+
+类似于Classifier-Guidance添加调节因子 $\gamma$ , Classifier-Free也可以采用类似的技巧:
+
+$$ \tilde{\epsilon_\theta}(x_t, t, y) = (1+w)\epsilon_\theta(x_t, t, y) - w\epsilon_\theta(x_t, t)$$
+
+其中 $w$ 是类似 $\gamma$ 的调节因子。$\tilde{\epsilon_\theta}$ 包含conditional和unconditional两部分，在训练时我们以一定概率将 $y$ 置为 None 来训练unconditional的部分，在采样时用 $\tilde{\epsilon_\theta}$ 替换原来的 $\epsilon_\theta$ 计算。
 
 ## Reference
 
 - [Diffusion Models：生成扩散模型](https://zhuanlan.zhihu.com/p/549623622)
 - [由浅入深了解Diffusion Model](https://zhuanlan.zhihu.com/p/525106459)
 - [生成扩散模型(一): 基础 (Generative Diffusion Model: Basic)](https://www.jarvis73.com/2022/08/08/Diffusion-Model-1/)
+- [生成扩散模型漫谈（九）：条件控制生成结果](https://spaces.ac.cn/archives/9257)
+- [基于扩散模型的文本引导图像生成算法](https://blog.csdn.net/c9yv2cf9i06k2a9e/article/details/124641910)
