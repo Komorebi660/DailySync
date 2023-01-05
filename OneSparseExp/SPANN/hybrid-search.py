@@ -1,4 +1,3 @@
-import SPTAG
 import requests
 import pickle
 import csv
@@ -6,8 +5,10 @@ import time
 import json
 import sys
 import numpy as np
+import argparse
 
 sys.path.append('/SPTAG/Release/')
+import SPTAG
 
 index = SPTAG.AnnIndex.Load('msmarco')
 
@@ -94,9 +95,18 @@ def merge(query_path, query_embedding_path, out_path, out_latency_path, knn_weig
 
 
 if __name__ == "__main__":
-    query_path = "../../data/queries.dev.small.tsv"
-    query_embedding_path = "../../embedding_data/query/query_dev_small.pt"
-    out_path = "./inverted_index_spann_qrels.tsv"
-    out_latency_path = "./inverted_index_spann_latency.tsv"
-    knn_weight = 10.0
-    merge(query_path, query_embedding_path, out_path, out_latency_path, knn_weight)
+    parser = argparse.ArgumentParser()
+    parser.add_argument('--query-path', type=str, default="../../data/queries.dev.small.tsv",
+                        help='path to query')
+    parser.add_argument('--query-embedding-path', type=str, default="../../embedding_data/query/query_dev_small.pt",
+                        help='path to query embeddings')
+    parser.add_argument('--search-result-path', type=str, default="./inverted_index_spann_qrels.tsv",
+                        help='path to save search result')
+    parser.add_argument('--latency-result-path', type=str, default="./inverted_index_spann_latency.tsv",
+                        help='path to save latency result')
+    parser.add_argument('--knn-weight', type=float, default=10.0,
+                        help='weight of knn score')
+
+    args = parser.parse_args()
+
+    merge(args.query_path, args.query_embedding_path, args.search_result_path, args.latency_result_path, args.knn_weight)

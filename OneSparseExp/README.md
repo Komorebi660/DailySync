@@ -322,7 +322,7 @@ make -j8
 代码见[这里](./SPANN/build-index.py), 使用下面的命令运行脚本构建索引(可能需要几个小时)。
 
 ```bash
-python3 -u build-index.py 2>&1 > build-index.log &
+python3 -u build-index.py --passage-path "../embedding_data/corpus" 2>&1 > build-index.log &
 ```
 
 构建完成后得到index的目录如下:
@@ -345,13 +345,23 @@ python3 -u build-index.py 2>&1 > build-index.log &
 `SPANN`搜索代码在[这里](./SPANN/search.py), 我们可以使用下面的命令运行脚本。
 
 ```bash
-python3 -u search.py 2>&1 > search.log &
+python3 -u search.py \
+  --query-path "../data/queries.dev.small.tsv" \
+  --search-result-path "./spann_qrels.tsv" \
+  --latency-result-path "./spann_latency.tsv" \
+  2>&1 > search.log &
 ```
 
 `SPANN`+`Inverted Index`搜索代码在[这里](./SPANN/hybrid-search.py), 基本思想是`SPANN`和`Elasticsearch`各搜索200个结果, 然后合并。使用下面的命令运行脚本。
 
 ```bash
-python3 -u hybrid-search.py 2>&1 > hybrid-search.log &
+python3 -u hybrid-search.py \
+  --query-path "../../data/queries.dev.small.tsv" \
+  --query-embedding-path "../../embedding_data/query/query_dev_small.pt" \
+  --search-result-path "./inverted_index_spann_qrels.tsv" \
+  --latency-result-path "./inverted_index_spann_latency.tsv" \
+  --knn_weight 10.0 \
+  2>&1 > hybrid-search.log &
 ```
 
 ## Evaluation
@@ -362,16 +372,22 @@ Accuracy部分的验证需要在**Windows Python3.9**环境下进行, 代码见[
 python -u eval_trec.py --trec_path "path-to-search-result" --qrels_path "./qrels.dev.small.tsv" --output_path "./results.tsv"
 ```
 
-需要注意的是，输出文件的格式为:
+Latency计算的代码见[这里](./Evaluation/eval_latency.py):
+
+```bash
+python3 eval_latency.py --path "qrels-latency.tsv"
+```
+
+需要注意的是，输出搜索结果的格式为:
 
 ```
 {qid} 0 {pid} {rank} {score} IndriQueryLik
 ```
 
-Latency计算的代码见[这里](./Evaluation/eval_latency.py):
+而输出搜索时间的格式为:
 
-```bash
-python3 eval_latency.py --path "qrels-latency.tsv"
+```
+{qid} \t {time}
 ```
 
 ## Filter Search
@@ -392,6 +408,33 @@ $$P(r) = \frac{C}{r^\alpha}$$
 在`FilterSearch`文件夹中:
 
 - `gen_filter.py`用于生成`location`和`tag`.
-- `gen_gt.py`用于生成ground truth. 格式为`qid pid rank score`
-- `spann_filter.py`每次**double** SPANN返回的结果直到filter后剩余结果超过100个，该结果作为baseline.
+- `gen_gt.py`用于生成ground truth. 格式为`{qid} \t {pid} \t {rank} \t {score}`
+- `spann_filter.py`每次**double** SPANN返回的结果直到filter后剩余结果超过给定的 $k$ 个，该结果作为baseline.
 - `eval.py`用于计算filter search的`MRR`和`Recall`.
+
+```bash
+python3 gen_filter.py \
+  --passage-filter-path "passage_filter.tsv" \
+  --query-filter-path "query_filter.tsv" \
+  --query-path "../data/queries_dev_small.tsv"
+
+python3 gen_gt.py \
+  --query-filter-path "query_filter.tsv" \
+  --passage-filter-path "passage_filter.tsv" \
+  --query-path "../embedding_data/query/query_dev_small.pt" \
+  --passage-path "../embedding_data/corpus" \
+  --result-path "gt.tsv"
+
+python3 spann_filter.py \
+  --query-filter-path "query_filter.tsv" \
+  --passage-filter-path "passage_filter.tsv" \
+  --query-path "../embedding_data/query/query_dev_small.pt" \
+  --search-result-path "./spann_filter_qrels.tsv" \
+  --latency-result-path "./spann_filter_latency.tsv" \
+  --k 100
+
+python3 eval.py \
+  --gt-path "gt.tsv" \
+  --search-result-path "./spann_filter_qrels.tsv" \
+  --k 100
+```

@@ -1,13 +1,20 @@
 import sys
 import pickle
 import numpy as np
+import argparse
 
-sys.path.append('/SPTAG/Release/')
+parser = argparse.ArgumentParser()
+parser.add_argument('--passage-path', type=str, default="../embedding_data/corpus",
+                        help='path to passage embeddings folder')
+args = parser.parse_args()
+
+# add SPTAG Release folder to path
+sys.path.append('./SPTAG/Release/')
 import SPTAG
 
 corpus = []
 for i in range(10):
-    with open("../../embedding_data/corpus/split0%d.pt" % i, "rb") as f:
+    with open(args.passage_path + "/split0%d.pt" % i, "rb") as f:
         embedding, _ = pickle.load(f)
         corpus.append(embedding)
     f.close()

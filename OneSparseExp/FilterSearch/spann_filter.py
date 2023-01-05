@@ -3,6 +3,7 @@ import csv
 import time
 import sys
 import numpy as np
+import argparse
 
 sys.path.append('/SPTAG/Release/')
 import SPTAG
@@ -27,7 +28,7 @@ def search_with_spann(embedding, k):
     return [(result[0][i], 100.0-result[1][i]) for i in range(k)]
 
 
-def search(passage_filter_path, query_filter_path, query_embedding_path, out_path, out_latency_path):
+def search(passage_filter_path, query_filter_path, query_embedding_path, out_path, out_latency_path, num_of_results):
     passage_filter = load_passage_filter(passage_filter_path)
 
     with open(query_filter_path, "r", encoding="utf8") as f_query_filter, \
@@ -44,10 +45,10 @@ def search(passage_filter_path, query_filter_path, query_embedding_path, out_pat
             latency = 0.0
             start = time.time()
 
-            k = 100
+            k = num_of_results
             candidates = []  # [docid, score]
             #enlarge k until get enough candidates
-            while len(candidates) < 100:
+            while len(candidates) < num_of_results:
                 k = k*2  # double k
                 candidates = []  # clear
                 #search with spann and return k results
@@ -60,7 +61,7 @@ def search(passage_filter_path, query_filter_path, query_embedding_path, out_pat
 
             latency += time.time() - start
             total_k += k
-            for i in range(100):
+            for i in range(num_of_results):
                 out.write(f"{qid}\t{candidates[i][0]}\t{i+1}\t{candidates[i][1]}\n")
             out_latency.write(f"{qid}\t{latency}\n")
 
@@ -73,9 +74,21 @@ def search(passage_filter_path, query_filter_path, query_embedding_path, out_pat
 
 
 if __name__ == "__main__":
-    passage_filter_path = "passage_filter.tsv"
-    query_filter_path = "query_filter.tsv"
-    query_embedding_path = "/embedding_data/query/query_dev_small.pt"
-    out_path = "spann_filter_qrels.tsv"
-    out_latency_path = "spann_filter_latency.tsv"
-    search(passage_filter_path, query_filter_path, query_embedding_path, out_path, out_latency_path)
+    parser = argparse.ArgumentParser()
+    parser.add_argument('--passage-filter-path', type=str, default="passage_filter.tsv",
+                        help='path to filter data of passages')
+    parser.add_argument('--query-filter-path', type=str, default="query_filter.tsv",
+                        help='path to filter data of queries')
+    parser.add_argument('--query-path', type=str, default="../embedding_data/query/query_dev_small.pt",
+                        help='path to query embeddings')
+    parser.add_argument('--k', type=int, default=100,
+                        help='number of results')
+    parser.add_argument('--search-result-path', type=str, default="./spann_filter_qrels.tsv",
+                        help='path to save search result')
+    parser.add_argument('--latency-result-path', type=str, default="./spann_filter_latency.tsv",
+                        help='path to save latency result')
+
+    args = parser.parse_args()
+
+    search(args.passage_filter_path, args.query_filter_path, args.query_path, \
+           args.search_result_path, args.latency_result_path, args.k)

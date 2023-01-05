@@ -1,48 +1,51 @@
 import csv
-import numpy as np
+import argparse
 
 
-def eval(gt_path, result_path):
-    recall_1, recall_10, recall_100 = 0.0, 0.0, 0.0
-    mrr_10, mrr_100 = 0.0, 0.0
-    i = 0
+def eval(gt_path, result_path, k):
+    recall= 0.0
+    mrr = 0.0
     with open(gt_path, "r", encoding="utf8") as f_gt, \
             open(result_path, "r", encoding="utf8") as f_result:
-        gt_tsvreader = csv.reader(f_gt, delimiter=" ")
+        gt_tsvreader = csv.reader(f_gt, delimiter="\t")
         result_tsvreader = csv.reader(f_result, delimiter="\t")
-        gt_list = []
-        result_list = []
-        result_list_with_rank = []
-        for [_, gt_docid, _, _], [_, docid, rank, _] in zip(gt_tsvreader, result_tsvreader):
-            i += 1
-            gt_list.append(gt_docid)
-            result_list.append(docid)
-            result_list_with_rank.append([docid, rank])
-            if(i % 100 == 0):
-                #calculate recall
-                recall_1 += len(set(gt_list).intersection(set(result_list[:1])))/1
-                recall_10 += len(set(gt_list).intersection(set(result_list[:10])))/10
-                recall_100 += len(set(gt_list).intersection(set(result_list[:100])))/100
-                #calculate mrr
-                for [docid, rank] in result_list_with_rank:
-                    if docid in gt_list:
-                        mrr_100 += 1.0/int(rank)
-                        break
-                for [docid, rank] in result_list_with_rank[:10]:
-                    if docid in gt_list:
-                        mrr_10 += 1.0/int(rank)
-                        break
-                #clear
-                gt_list = []
-                result_list = []
-                result_list_with_rank = []
+        gt_dict = {}
+        for [gt_qid, gt_docid, _, _] in gt_tsvreader:
+            if int(gt_qid) not in gt_dict.keys():
+                gt_dict[int(gt_qid)] = [gt_docid]
+            else:
+                gt_dict[int(gt_qid)].append(gt_docid)
+        result_dict = {}
+        for [result_qid, result_docid, _, _] in result_tsvreader:
+            if int(result_qid) not in result_dict.keys():
+                result_dict[int(result_qid)] = [result_docid]
+            else:
+                result_dict[int(result_qid)].append(result_docid)
 
-    print(f"recall@1: {recall_1*100/i}")
-    print(f"recall@10: {recall_10*100/i}")
-    print(f"recall@100: {recall_100*100/i}")
-    print(f"mrr@10: {mrr_10*100/i}")
-    print(f"mrr@100: {mrr_100*100/i}")
+        for qid in gt_dict.keys():
+            gt_list = gt_dict[qid]
+            result_list = result_dict[qid]
+            #calculate recall
+            recall += len(set(gt_list).intersection(set(result_list[:k])))/k
+            #calculate mrr
+            for i in range(k):
+                if result_list[i] in gt_list:
+                    mrr += 1.0/(i+1)
+                    break
+
+    print(f"recall@{k}: {recall/6980}")
+    print(f"mrr@{k}: {mrr/6980}")
 
 
 if __name__ == "__main__":
-    eval("./gt.tsv", "./msmarco_spann_filter_qrels.tsv")
+    parser = argparse.ArgumentParser()
+    parser.add_argument('--gt-path', type=str, default="./gt.tsv",
+                        help='path to filter data of passages')
+    parser.add_argument('--search-result-path', type=str, default="./spann_filter_qrels.tsv",
+                        help='path to save search result')
+    parser.add_argument('--k', type=int, default=100,
+                        help='evaluate top k results')
+
+    args = parser.parse_args()
+
+    eval(args.gt_path, args.search_result_path, args.k)
