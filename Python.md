@@ -101,8 +101,8 @@ b = list(map(int, a)) # [1, 2, 3]
 
 ```python
 # find index of a given value in the array
-a = np.array([1, 2, 3, 4, 5])
-np.where(a == 3)[0]     # 2
+a = np.array([1, 3, 3, 4, 5])
+np.where(a == 3)[0]     # [1, 2]
 
 # L2 norm
 np.linalg.norm(a)       # 7.416198487095663
@@ -112,4 +112,9 @@ a = np.array([4, 2, 1, 5, 3])
 np.argsort(a)           
 # [2 1 4 0 3]
 # first element is "1" which is in a[2]
+
+# delete column/row
+a = np.array([[1, 2, 3], [4, 5, 6], [7, 8, 9]])
+np.delete(a, 1, axis=0) # [1, 2, 3], [7, 8, 9]
+np.delete(a, 1, axis=1) # [1, 3], [4, 6], [7, 9]
 ```
