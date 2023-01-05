@@ -246,7 +246,7 @@ $$\mathbb{E}_{x_0, y\sim p(x_0, y), t, \epsilon}\left[||\epsilon-\epsilon_\theta
 
 $$ \tilde{\epsilon_\theta}(x_t, t, y) = (1+w)\epsilon_\theta(x_t, t, y) - w\epsilon_\theta(x_t, t)$$
 
-其中 $w$ 是类似 $\gamma$ 的调节因子。$\tilde{\epsilon_\theta}$ 包含conditional和unconditional两部分，在训练时我们以一定概率将 $y$ 置为 None 来训练unconditional的部分，在采样时用 $\tilde{\epsilon_\theta}$ 替换原来的 $\epsilon_\theta$ 计算。
+其中 $w$ 是类似 $\gamma$ 的调节因子。 $\tilde{\epsilon_\theta}$ 包含conditional和unconditional两部分，在训练时我们以一定概率将 $y$ 置为 None 来训练unconditional的部分，在采样时用 $\tilde{\epsilon_\theta}$ 替换原来的 $\epsilon_\theta$ 计算。
 
 ## Reference
 
