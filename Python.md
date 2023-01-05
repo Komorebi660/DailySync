@@ -8,6 +8,7 @@
   - [Basic Data Structure](#basic-data-structure)
     - [dict](#dict)
     - [set](#set)
+    - [list](#list)
   - [numpy](#numpy)
 
 ## data load & store
@@ -87,6 +88,13 @@ b = set([2, 3, 4])
 
 # 求交集(计算recall)
 a.intersection(b) # {2, 3}
+```
+
+### list
+
+```python
+a = ['1', '2', '3']
+b = list(map(int, a)) # [1, 2, 3]
 ```
 
 ## numpy
