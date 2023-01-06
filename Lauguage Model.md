@@ -4,6 +4,9 @@
   - [Autoregressive Language Model](#autoregressive-language-model)
   - [Autoencoding Language Model](#autoencoding-language-model)
   - [BLEU](#bleu)
+  - [Transformer](#transformer)
+    - [RNN](#rnn)
+    - [Attention](#attention)
 
 ## Autoregressive Language Model
 
@@ -41,3 +44,11 @@ paper中的BLEU一般取为:
 $$BLEU = \exp \left(\sum_{n=1}^4 score_n \right)$$
 
 最大值时四个 $score$ 均为 $1$ , $BLEU_{max} = e^4 \approx 54.598$ .
+
+## Transformer
+
+### RNN
+
+
+
+### Attention
