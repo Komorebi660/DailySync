@@ -15,6 +15,8 @@
     - [search](#search-1)
   - [Evaluation](#evaluation)
   - [Filter Search](#filter-search)
+  - [Update Performance](#update-performance)
+    - [preparation](#preparation)
 
 ## Get Data
 
@@ -437,4 +439,42 @@ python3 eval.py \
   --gt-path "gt.tsv" \
   --search-result-path "./spann_filter_qrels.tsv" \
   --k 100
+```
+
+## Update Performance
+
+### preparation
+
+首先安装`rocksdb`:
+
+```bash
+git clone --recursive https://github.com/facebook/rocksdb.git
+cd rocksdb
+mkdir build
+cd build
+cmake -DUSE_RTTI=1 -DWITH_JEMALLOC=1 -DWITH_SNAPPY=1 -DCMAKE_C_COMPILER=gcc-7 -DCMAKE_CXX_COMPILER=g++-7 -DCMAKE_BUILD_TYPE=Release -DCMAKE_CXX_FLAGS="-fPIC" ..
+make -j8
+make install DESTDIR=xxx #指定安装目录
+
+#添加环境变量
+export RocksDB_DIR=xxx:$RocksDB_DIR
+```
+
+如果在编译过程遇到`regfreeA, regexecA`等`not recognize`问题，可能是由于指定了`boost`搜索路径的原因, `/usr/include/regex.h` 和 `/usr/include/boost/regex.h` 发生了冲突, 只需要删去`CPLUS_INCLUDE_PATH, C_INCLUDE_PATH, LD_LIBRARY_PATH`中指定`boost`路径即可。
+
+安装依赖:
+
+```bash
+sudo apt-get install libtbb-dev
+```
+
+安装SPFresh:
+
+```bash
+git clone --recursive https://github.com/Yuming-Xu/SPFresh.git
+cd SPFresh
+mkdir build
+cd build
+cmake -DCMAKE_BUILD_TYPE=Release ..
+make -j8
 ```
