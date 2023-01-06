@@ -210,27 +210,27 @@ Classifier-Guidance方案最早出自[《Diffusion Models Beat GANs on Image Syn
 
 这一方案是在已经训练好的diffusion model上额外添加一个分类器 $p_\phi(y|x_t)$ 用于引导, 其中 $y$ 是条件, $\phi$ 是分类器的参数。这一分类器再被应用前需要先用带噪声的图片 $x_t$ 训练, 具体来说, 可以通过diffusion model对原始图片进行加噪处理(正向传播), 把得到的噪声图片喂给classifier做训练。下面我们主要考虑如何使用这个分类器来引导diffusion生成。
 
-无条件生成过程可以表述为 $p_\theta(x_{t-1}|x_t)$ , 加上条件 $y$ 后可以被写成 $p_\theta(x_{t-1}|x_t, y)$ , 利用贝叶斯公式:
+无条件生成过程可以表述为 $p_\theta(x_{t-1}|x_t)$ , 加上条件 $y$ 后可以被写成 $p_{\theta,\phi}(x_{t-1}|x_t, y)$ , 利用贝叶斯公式:
 
-$$p_\theta(x_{t-1}|x_t, y) = \frac{p_\theta(x_{t-1}|x_t)p_\theta(y|x_{t-1},x_t)}{p_\theta(y|x_t)}$$
+$$p_{\theta,\phi}(x_{t-1}|x_t, y) = \frac{p_\theta(x_{t-1}|x_t)p_\phi(y|x_{t-1},x_t)}{p_\phi(y|x_t)}$$
 
-由于 $x_t$ 只是在 $x_{t-1}$ 基础上添加噪声, 对分类不会有影响, 因此有 $p_\theta(y|x_{t-1},x_t) = p_\theta(y|x_{t-1})$ , 代入得:
+由于 $x_t$ 只是在 $x_{t-1}$ 基础上添加噪声, 对分类不会有影响, 因此有 $p_\phi(y|x_{t-1},x_t) = p_\phi(y|x_{t-1})$ , 代入得:
 
-$$p_\theta(x_{t-1}|x_t, y) = p_\theta(x_{t-1}|x_t)\frac{p_\theta(y|x_{t-1})}{p_\theta(y|x_t)} = p_\theta(x_{t-1}|x_t)e^{\log p_\theta(y|x_{t-1}) - \log p_\theta(y|x_t)}$$
+$$p_{\theta,\phi}(x_{t-1}|x_t, y) = p_\theta(x_{t-1}|x_t)\frac{p_\phi(y|x_{t-1})}{p_\phi(y|x_t)} = p_\theta(x_{t-1}|x_t)e^{\log p_\phi(y|x_{t-1}) - \log p_\phi(y|x_t)}$$
 
-当 $T$ 足够大时, $x_{t-1}$ 和 $x_t$ 相差很小, 因此 $p_\theta(y|x_{t-1})$ 和 $p_\theta(y|x_t)$ 也相差很小, 故可以对其做泰勒展开:
+当 $T$ 足够大时, $x_{t-1}$ 和 $x_t$ 相差很小, 因此 $p_\phi(y|x_{t-1})$ 和 $p_\phi(y|x_t)$ 也相差很小, 故可以对其做泰勒展开:
 
-$$\log p_\theta(y|x_{t-1}) - \log p_\theta(y|x_t) \approx (x_{t-1} - x_t) \nabla_{x_t} \log p_\theta(y|x_t) \approx (x_{t-1} - \mu_\theta(x_t,t)) \nabla_{x_t} \log p_\theta(y|x_t)$$
+$$\log p_\phi(y|x_{t-1}) - \log p_\phi(y|x_t) \approx (x_{t-1} - x_t) \nabla_{x_t} \log p_\phi(y|x_t) \approx (x_{t-1} - \mu_\theta(x_t,t)) \nabla_{x_t} \log p_\phi(y|x_t)$$
 
 由于 $p_\theta(x_{t-1}|x_t) \sim \mathcal{N}(x_t; \mu_\theta(x_t, t), \sigma_\theta^2(x_t, t)\mathbf{I}) \propto \exp \left( - \frac{(x_t - \mu_\theta(x_t, t))^2}{2\sigma_\theta^2(x_t, t)} \right)$ , 因此有:
 
-$$p_\theta(x_{t-1}|x_t, y) \propto \exp \left( - \frac{(x_t - \mu_\theta(x_t, t))^2}{2\sigma_\theta^2(x_t, t)} + (x_{t-1} - \mu_\theta(x_t,t)) \nabla_{x_t} \log p_\theta(y|x_t) \right) \propto \exp \left( - \frac{(x_t - \mu_\theta(x_t, t) - \sigma_\theta^2(x_t, t)\nabla_{x_t} \log p_\theta(y|x_t) )^2}{2\sigma_\theta^2(x_t, t)}\right)$$
+$$p_{\theta,\phi}(x_{t-1}|x_t, y) \propto \exp \left( - \frac{(x_t - \mu_\theta(x_t, t))^2}{2\sigma_\theta^2(x_t, t)} + (x_{t-1} - \mu_\theta(x_t,t)) \nabla_{x_t} \log p_\phi(y|x_t) \right) \propto \exp \left( - \frac{(x_t - \mu_\theta(x_t, t) - \sigma_\theta^2(x_t, t)\nabla_{x_t} \log p_\phi(y|x_t) )^2}{2\sigma_\theta^2(x_t, t)}\right)$$
 
 也即: 
 
-$$p_\theta(x_{t-1}|x_t, y) = \mathcal{N}(x_t; \mu_\theta(x_t, t) + \sigma_\theta^2(x_t, t)\nabla_{x_t} \log p_\theta(y|x_t), \sigma_\theta^2(x_t, t)\mathbf{I}) \sim \frac{1}{\sqrt{\alpha_t}}(x_t - \frac{\beta_t}{\sqrt{1-\overline{\alpha_t}}}\epsilon_\theta(x_t, t)) + \sigma_\theta^2(x_t, t)\nabla_{x_t} \log p_\theta(y|x_t) + \sigma_\theta(x_t, t) z \qquad (z \sim \mathcal{N}(0, \mathbf{I}))$$
+$$p_{\theta,\phi}(x_{t-1}|x_t, y) = \mathcal{N}(x_t; \mu_\theta(x_t, t) + \sigma_\theta^2(x_t, t)\nabla_{x_t} \log p_\phi(y|x_t), \sigma_\theta^2(x_t, t)\mathbf{I}) \sim \frac{1}{\sqrt{\alpha_t}}(x_t - \frac{\beta_t}{\sqrt{1-\overline{\alpha_t}}}\epsilon_\theta(x_t, t)) + \sigma_\theta^2(x_t, t)\nabla_{x_t} \log p_\phi(y|x_t) + \sigma_\theta(x_t, t) z \qquad (z \sim \mathcal{N}(0, \mathbf{I}))$$
 
-与不加条件的情形相比仅仅在均值里多了一项 $\sigma_\theta^2(x_t, t)\nabla_{x_t} \log p_\theta(y|x_t)$ . 在实际sample过程中，用classifier对diffusion model生成的图片 $x_t$ 进行分类，得到预测分数与目标类别的交叉熵，把它对 $x_t$ 求梯度，用梯度引导下一步的生成采样。另外，我们也可以在这一项前面添加调节因子 $\gamma$ 来控制生成图片与 $y$ 的相似性。
+与不加条件的情形相比仅仅在均值里多了一项 $\sigma_\theta^2(x_t, t)\nabla_{x_t} \log p_\phi(y|x_t)$ . 在实际sample过程中，用classifier对diffusion model生成的图片 $x_t$ 进行分类，得到预测分数与目标类别的交叉熵 $\log p_\phi(y|x_t)$ ，把它对 $x_t$ 求梯度，用梯度引导下一步的生成采样。另外，我们也可以在这一项前面添加调节因子 $\gamma$ 来控制生成图片与 $y$ 的相似性。
 
 ### Classifier-Free
 
