@@ -19,7 +19,7 @@ $t$ 是当前的时刻， $y_{\lt t}$ 是当前时刻已经生成的token，由�
 
 ## BLEU
 
-BLEU全称是 *Bilingual Evaulation Understudy*。其意思是双语评估替补, 是一种评估机器翻译质量的方法，也可以推广到其他NLP问题中。
+BLEU全称是 *Bilingual Evaulation Understudy*, 意思是双语评估替补。它是一种评估机器翻译质量的方法，也可以推广到其他NLP问题中。
 
 假设参考翻译集合为: 
 
@@ -34,11 +34,10 @@ There is a cat on the desk.
 
 还有个因素需要考虑，假如实际翻译句子为`desk the on cat a is there`，那么得分为`7/7`，虽然单词都出现了，句子的流畅度却没有考虑。因此，根据“平滑”的思想，进一步考虑`1-gram`到`4-gram`。具体来说：我们除了对单个单词计数，还对2、3、4个单词组成的词组进行计数。$n = 1,2,3,4$ 时，每 $n$ 个单词为一组，设实际翻译中每个元素为 $x_i^n$ , 则有:
 
-$$score_n = \sum_i{x_i^n在参考翻译中出现的最大次数} / \sum_i{x_i^n在实际翻译中出现的次数}$$
+$$score_n = \sum_i{x_i^n在参考翻译中出现的最大次数}\quad / \quad \sum_i{x_i^n在实际翻译中出现的次数}$$
 
 paper中的BLEU一般取为:
 
 $$BLEU = \exp \left(\sum_{n=1}^4 score_n \right)$$
 
 最大值时四个 $score$ 均为 $1$ , $BLEU_{max} = e^4 \approx 54.598$ .
-
