@@ -445,7 +445,24 @@ python3 eval.py \
 
 ### preparation
 
-首先安装`rocksdb`:
+首先安装`liburing`:
+
+```bash
+git clone https://github.com/axboe/liburing.git
+cd liburing
+./configure --prefix=./xxx
+
+vim src/Makefile
+# 修改src/Makefile, CFLAGS添加-fPIC
+# 否则在编译rocksdb时会报错
+
+make -j 8 && make install
+
+# 添加环境变量
+export PATH=xxx/include:xxx/lib:$PATH
+```
+
+接着安装`rocksdb`:
 
 ```bash
 git clone --recursive https://github.com/facebook/rocksdb.git
@@ -453,7 +470,7 @@ cd rocksdb
 mkdir build
 cd build
 cmake -DUSE_RTTI=1 -DWITH_JEMALLOC=1 -DWITH_SNAPPY=1 -DCMAKE_C_COMPILER=gcc-7 -DCMAKE_CXX_COMPILER=g++-7 -DCMAKE_BUILD_TYPE=Release -DCMAKE_CXX_FLAGS="-fPIC" ..
-make -j8
+make -j 16
 make install DESTDIR=xxx #指定安装目录
 
 #添加环境变量
@@ -468,13 +485,13 @@ export RocksDB_DIR=xxx:$RocksDB_DIR
 sudo apt-get install libtbb-dev
 ```
 
-安装SPFresh:
+最后安装SPFresh:
 
 ```bash
 git clone --recursive https://github.com/Yuming-Xu/SPFresh.git
 cd SPFresh
 mkdir build
 cd build
-cmake -DCMAKE_BUILD_TYPE=Release ..
-make -j8
+cmake -DCMAKE_BUILD_TYPE=Release .. # 注意观察各项环境的输出是否正确，不正确可能需要手动调整CMakeLists.txt
+make -j 16
 ```
