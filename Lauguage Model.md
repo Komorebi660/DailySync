@@ -1,17 +1,19 @@
 # Language Model
 
 - [Language Model](#language-model)
-  - [Autoregressive Language Model](#autoregressive-language-model)
-  - [Autoencoding Language Model](#autoencoding-language-model)
+  - [Two kinds of Models](#two-kinds-of-models)
+    - [Autoregressive Language Model](#autoregressive-language-model)
+    - [Autoencoding Language Model](#autoencoding-language-model)
   - [BLEU](#bleu)
+  - [RNN](#rnn)
+  - [Seq2Seq](#seq2seq)
+  - [Attention](#attention)
   - [Transformer](#transformer)
-    - [RNN](#rnn)
-    - [Seq2Seq](#seq2seq)
-    - [Attention](#attention)
-    - [Transformer](#transformer-1)
   - [Reference](#reference)
 
-## Autoregressive Language Model
+## Two kinds of Models
+
+### Autoregressive Language Model
 
 自回归模型即在给定之前的所有token，输出下一个token是什么(指利用上文信息或者下文信息)，是单向的。给定源语句 $(x_1, \cdots, x_m)$ ，目标语句 $(y_1, \cdots, y_n)$ 是按照如下的方式生成的:
 
@@ -19,7 +21,7 @@ $$p(y|x) = \prod_{t}{p(y_t|y_{\lt t},x)}$$
 
 $t$ 是当前的时刻， $y_{\lt t}$ 是当前时刻已经生成的token，由于前后的依赖关系，AR模型的生成往往需要 $O(n)$ 次循环。AR模型适合用于自然语言生成(NLG)任务。GPT是典型的自回归模型，缺点是生成速度慢，non-autoregressive模型就是想要减少生成时的循环次数。
 
-## Autoencoding Language Model
+### Autoencoding Language Model
 
 自编码模型是把输入token打乱，学习出一个中间表示(隐空间)，再用这个中间表示还原出原始的序列。BERT作为典型的AE模型就是通过mask掉一部分token，再重建恢复原始序列。AE模型能较好地编码上下文信息，因此擅长自然语言理解(NLU)的任务。
 
@@ -38,7 +40,7 @@ There is a cat on the desk.
 
 错误出现在对单词的计数不合理，一个解决方法是，我们规定*实际翻译结果中每个单词的计数*不得超过在*单个参考翻译中出现的最大次数*。在上述`is is is is is is`翻译结果中，单词`is`在参考翻译中出现的最大次数是 $1$ ，因此，只能被记 $1$ 次，评分为 $1/6$ , 这是比较合理的。
 
-另外结果的顺序也需要考虑，假如实际翻译句子为`desk the on cat a is there`，那么得分为 $7/7$ ，虽然单词都出现了，但结果却没有意义。因此，根据“平滑”的思想，进一步考虑`1-gram`到`4-gram`。具体来说：我们除了对单个单词计数，还对2、3、4个单词组成的词组进行计数。$n = 1,2,3,4$ 时，每 $n$ 个单词为一组，设实际翻译中每个元素为 $x_i^n$ , 则有:
+另外结果的顺序也需要考虑，假如实际翻译句子为`desk the on cat a is there`，那么得分为 $7/7$ ，虽然单词都出现了，但结果却没有意义。因此，根据“平滑”的思想，进一步考虑`1-gram`到`4-gram`。具体来说：我们除了对单个单词计数，还对2、3、4个单词组成的词组进行计数。$n = 1,2,3,4$ 时 ，每 $n$ 个单词为一组，设实际翻译中每个元素为 $x_i^n$ , 则有:
 
 $$score_n = \sum_i{x_i^n在参考翻译中出现的最大次数}\quad / \quad \sum_i{x_i^n在实际翻译中出现的次数}$$
 
@@ -48,9 +50,7 @@ $$\mathbf{BLEU} = \exp \left(\sum_{n=1}^4 score_n \right)$$
 
 最大时四个 $score$ 均为 $1$ , $\mathbf{BLEU}_{max} = e^4 \approx 54.598$ .
 
-## Transformer
-
-### RNN
+## RNN
 
 前向神经网络在很多任务中都取得不错的效果，但是这些网络结构的通常比较适合用于一些不具有**时间或者序列依赖性**的数据，即输入通常与上一时刻的输入没有关系。但是序列数据不同，输入之间存在着先后顺序，当前输入的结果通常与前后的输入都有关。例如一段句子包含 4 个输入单词 ：*“我”*、*“去”*、*“商场”*、*“打车”*，4 个单词通过不同的顺序排列，会有不同的意思，*“我打车去商场”* 和 *“我去商场打车”*。因此我们通常需要按照一定的顺序阅读句子才能理解句子的意思。
 
@@ -67,7 +67,7 @@ $$h_t = \sigma_1(Ux_t+Wh_{t-1}+b_1)$$
 
 $$y_t = \sigma_2(Vh_t + b_2)$$
 
-其中 $U,V,W$ 为参数矩阵，$b_1,b_2$ 为偏置向量，$\sigma_1,\sigma_2$ 为激活函数。当序列较长时, RNN可能会遇到**梯度消失**和**梯度爆炸**的问题，主要原因是梯度中出现了连乘项 $\prod{\frac{\partial h_i}{\partial h_{i-1}}}$ . 为了解决这个问题，我们可以使用*长短期记忆网络(LSTM)*和*门控循环单元网络(GRU)*, 详细介绍可以参考[这里](https://www.jianshu.com/p/247a72812aff)。
+其中 $U,V,W$ 为参数矩阵, $b_1,b_2$ 为偏置向量, $\sigma_1,\sigma_2$ 为激活函数。当序列较长时, RNN可能会遇到**梯度消失**和**梯度爆炸**的问题，主要原因是梯度中出现了连乘项 $\prod{\frac{\partial h_i}{\partial h_{i-1}}}$ . 为了解决这个问题，我们可以使用*长短期记忆网络(LSTM)*和*门控循环单元网络(GRU)*, 详细介绍可以参考[这里](https://www.jianshu.com/p/247a72812aff)。
 
 另外, RNN也存在一些变种, 包括:
 
@@ -92,7 +92,7 @@ $$y_t = \sigma_2(Vh_t + b_2)$$
 </div>
 </br>
 
-### Seq2Seq
+## Seq2Seq
 
 上面的三种结构对于 RNN 的输入和输出个数都有一定的限制，但实际中很多任务的序列的长度是不固定的，例如机器翻译中，源语言、目标语言的句子长度不一样；对话系统中，问句和答案的句子长度不一样。**Seq2Seq** 是一种重要的 RNN 模型，也称为 **Encoder-Decoder** 模型，可以理解为一种 *N vs M* 的模型。模型包含两个部分：Encoder 用于编码序列的信息，将任意长度的序列信息编码到一个向量 $c$ 里。而 Decoder 是解码器，解码器得到向量 $c$ 之后可以将信息解码，并输出为序列。Seq2Seq 模型结构有很多种，Encoder部分基本一致，主要差异在Decoder部分：
 
@@ -117,7 +117,7 @@ $$y_t = \sigma_2(Vh_t + b_2)$$
 </div>
 </br>
 
-### Attention
+## Attention
 
 上述模型的问题在于只将编码器的**最后一个节点**的结果进行了输出，但是对于一个序列长度特别长的特征来说，这种方式无疑将会*遗忘大量的前面时间片的特征*。与其输入最后一个时间片的结果，不如将每个时间片的输出都提供给解码器，那么解码器如何使用这些特征就是Attention的作用。
 
@@ -136,7 +136,7 @@ Attention计算主要可以分为5步:
 - 第四步: 用权重 $a_1^t, \cdots, a_T^t$ 与Encoder得到的隐层状态 $h_1, \cdots, h_T$ 进行按位乘操作，得到当前时间片的注意力特征(Attention Vector) $z_1^t, \cdots, z_T^t$ 。
 - 第五步: 把得到的注意力特征变换为一个单一的向量, 可以是求和、拼接等其它方法，把这一向量输入到Decoder中计算。
 
-### Transformer
+## Transformer
 
 
 
