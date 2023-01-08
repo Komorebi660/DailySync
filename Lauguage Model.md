@@ -6,7 +6,10 @@
   - [BLEU](#bleu)
   - [Transformer](#transformer)
     - [RNN](#rnn)
+    - [Seq2Seq](#seq2seq)
     - [Attention](#attention)
+    - [Transformer](#transformer-1)
+  - [Reference](#reference)
 
 ## Autoregressive Language Model
 
@@ -35,20 +38,97 @@ There is a cat on the desk.
 
 错误出现在对单词的计数不合理，一个解决方法是，我们规定`实际翻译结果中每个单词的计数`不得超过在`单个参考翻译中出现的最大次数`。在上述`is is is is is is`翻译结果中，单词`is`在参考翻译中出现的最大次数是`1`，因此，只能被记`1`次，评分为`1/6`。这是比较合理的。
 
-还有个因素需要考虑，假如实际翻译句子为`desk the on cat a is there`，那么得分为`7/7`，虽然单词都出现了，句子的流畅度却没有考虑。因此，根据“平滑”的思想，进一步考虑`1-gram`到`4-gram`。具体来说：我们除了对单个单词计数，还对2、3、4个单词组成的词组进行计数。$n = 1,2,3,4$ 时，每 $n$ 个单词为一组，设实际翻译中每个元素为 $x_i^n$ , 则有:
+另外结果的顺序也需要考虑，假如实际翻译句子为`desk the on cat a is there`，那么得分为`7/7`，虽然单词都出现了，但结果却没有意义。因此，根据“平滑”的思想，进一步考虑`1-gram`到`4-gram`。具体来说：我们除了对单个单词计数，还对2、3、4个单词组成的词组进行计数。$n = 1,2,3,4$ 时，每 $n$ 个单词为一组，设实际翻译中每个元素为 $x_i^n$ , 则有:
 
 $$score_n = \sum_i{x_i^n在参考翻译中出现的最大次数}\quad / \quad \sum_i{x_i^n在实际翻译中出现的次数}$$
 
-paper中的BLEU一般取为:
+paper中的 $\mathbf{BLEU}$ 一般取为:
 
-$$BLEU = \exp \left(\sum_{n=1}^4 score_n \right)$$
+$$\mathbf{BLEU} = \exp \left(\sum_{n=1}^4 score_n \right)$$
 
-最大值时四个 $score$ 均为 $1$ , $BLEU_{max} = e^4 \approx 54.598$ .
+最大时四个 $score$ 均为 $1$ , $\mathbf{BLEU}_{max} = e^4 \approx 54.598$ .
 
 ## Transformer
 
 ### RNN
 
+前向神经网络在很多任务中都取得不错的效果，但是这些网络结构的通常比较适合用于一些不具有**时间或者序列依赖性**的数据，即输入通常与上一时刻的输入没有关系。但是序列数据不同，输入之间存在着先后顺序，当前输入的结果通常与前后的输入都有关。例如一段句子包含 4 个输入单词 ：*“我”*、*“去”*、*“商场”*、*“打车”*，4 个单词通过不同的顺序排列，会有不同的意思，*“我打车去商场”* 和 *“我去商场打车”*。因此我们通常需要按照一定的顺序阅读句子才能理解句子的意思。
 
+面对这种情况我们就需要用到**循环神经网络**(RNN)了，循环神经网络按照顺序处理所有的输入，每一时刻 $t$，都会存在一个向量 $h_t$ 保存与 $t$ 时刻相关的信息 (可以是 $t$ 时刻前的信息或者 $t$ 时刻后的信息)。通过向量 $h_t$ 与输入向量 $x_t$ ，就可以比较准确地判断当前的结果。RNN 按时刻展开的结构如下图所示：
+
+<div align=center>
+<img src="./figs/RNN.png" width=60%/>
+</div>
+</br>
+
+可以发现，在 $t$ 时刻，网络接收的数据包括前一时刻的隐态 $h_{t-1}$ 和当前时刻的输入 $x_t$ ，具体的计算公式为:
+
+$$h_t = \sigma_1(Ux_t+Wh_{t-1}+b_1)$$
+
+$$y_t = \sigma_2(Vh_t + b_2)$$
+
+其中 $U,V,W$ 为参数矩阵，$b_1,b_2$ 为偏置向量，$\sigma_1,\sigma_2$ 为激活函数。当序列较长时, RNN可能会遇到**梯度消失**和**梯度爆炸**的问题，主要原因是梯度中出现了连乘项 $\prod{\frac{\partial h_i}{\partial h_{i-1}}}$ . 为了解决这个问题，我们可以使用*长短期记忆网络(LSTM)*和*门控循环单元网络(GRU)*, 详细介绍可以参考[这里](https://www.jianshu.com/p/247a72812aff)。
+
+另外, RNN也存在一些变种, 包括:
+
+- *N vs N*: 输入和输出序列的长度是相等, 适用于词性标注以及自然语言理解等任务。
+
+<div align=center>
+<img src="./figs/RNN_N_vs_N.png" width=50%/>
+</div>
+</br>
+
+- *1 vs N*: 输入只有一个 $x$ , 输出是一个序列, 适用于图片生成文字，类别生成小说等任务。
+
+<div align=center>
+<img src="./figs/RNN_1_vs_N.png" width=50%/>
+</div>
+</br>
+
+- *N vs 1*: 输入是一个序列, 输出只有一个 $y$ , 适用于文本分类等任务。
+
+<div align=center>
+<img src="./figs/RNN_N_vs_1.png" width=50%/>
+</div>
+</br>
+
+### Seq2Seq
+
+上面的三种结构对于 RNN 的输入和输出个数都有一定的限制，但实际中很多任务的序列的长度是不固定的，例如机器翻译中，源语言、目标语言的句子长度不一样；对话系统中，问句和答案的句子长度不一样。**Seq2Seq** 是一种重要的 RNN 模型，也称为 **Encoder-Decoder** 模型，可以理解为一种 *N vs M* 的模型。模型包含两个部分：Encoder 用于编码序列的信息，将任意长度的序列信息编码到一个向量 $c$ 里。而 Decoder 是解码器，解码器得到向量 $c$ 之后可以将信息解码，并输出为序列。Seq2Seq 模型结构有很多种，Encoder部分基本一致，主要差异在Decoder部分：
+
+- 将上下文向量 $c$ 当成是 RNN 的初始隐藏状态，输入到 RNN 中，后续只接受上一个神经元的隐藏层状态 $h^{\prime}$ 而**不**接收其他的输入 $x$ .
+
+<div align=center>
+<img src="./figs/Seq2Seq_1.png" width=60%/>
+</div>
+</br>
+
+- 有自己的初始隐藏层状态 $h^{\prime}_0$，不再把上下文向量 $c$ 当成是 RNN 的初始隐藏状态，而是当成 RNN 每一个神经元的输入。
+
+<div align=center>
+<img src="./figs/Seq2Seq_2.png" width=60%/>
+</div>
+</br>
+
+- 和第二种类似，但是在输入的部分多了上一个神经元的输出 $y^{\prime}$ 。即每一个神经元的输入包括: 上一个神经元的隐藏层向量 $h^{\prime}_{t-1}$ ，上一个神经元的输出 $y^{\prime}_{t-1}$ ，上下文向量 $c$ .
+
+<div align=center>
+<img src="./figs/Seq2Seq_3.png" width=60%/>
+</div>
+</br>
 
 ### Attention
+
+
+
+### Transformer
+
+
+
+## Reference
+
+- [BLEU值](https://www.cnblogs.com/duye/p/10680058.html)
+- [循环神经网络 RNN、LSTM、GRU](https://www.jianshu.com/p/247a72812aff)
+- [Seq2Seq 模型详解](https://www.jianshu.com/p/80436483b13b)
+- [Attention 图解](https://zhuanlan.zhihu.com/p/342235515)
+- [Transformer 模型详解](https://zhuanlan.zhihu.com/p/48508221)
