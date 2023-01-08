@@ -10,6 +10,7 @@
     - [set](#set)
     - [list](#list)
   - [numpy](#numpy)
+  - [Matplotlib](#matplotlib)
   - [Faker](#faker)
 
 ## data load & store
@@ -124,8 +125,15 @@ b = list(map(int, a)) # [1, 2, 3]
 ## numpy
 
 ```python
+#设置随机种子
+np.random.seed(0)
 # 依概率p从data中随机采样size个数据
 r = np.random.choice(data, p=p, size=10)
+# 随机生成0~1之间的浮点数矩阵
+r = np.random.random((10, 10))
+# 随机生成[0, 9]整数矩阵
+r = np.random.randint(0, 10, (10, 10))
+
 
 # find index of a given value in the array
 a = np.array([1, 3, 3, 4, 5])
@@ -149,6 +157,93 @@ np.argsort(a)
 a = np.array([[1, 2, 3], [4, 5, 6], [7, 8, 9]])
 np.delete(a, 1, axis=0) # [1, 2, 3], [7, 8, 9]
 np.delete(a, 1, axis=1) # [1, 3], [4, 6], [7, 9]
+```
+
+## Matplotlib
+
+```python
+import matplotlib.pyplot as plt
+import numpy as np
+
+#设置全局字体
+plt.rc('font', family='Times New Roman')
+
+#设置标题
+plt.title('Test', fontsize=20, color='black')
+# 设置坐标轴标签
+plt.xlabel('axis_x', fontsize=15, color='black')
+plt.ylabel('axis_y', fontsize=15, color='black')
+# 设置刻度范围
+plt.xlim(-10.0, 10.0)
+plt.ylim(0.0, 10000.0)
+#设置刻度scale
+plt.yscale('log')
+# 设置刻度标签
+plt.xticks(np.arange(11), ['一', '二', '三', '四', '五', '六', '七', '八', '九', '十'], fontsize=10, color='gray')
+plt.yticks(fontsize=10, color='gray')
+
+#画曲线
+plt.plot(x, y, color='red', linewidth=1.0, linestyle='--', label='label1')
+"""
+color: 颜色
+linewidth: 线宽
+linestyle: 线型
+label: 图例
+"""
+
+#画散点
+plt.scatter(x, y, color='red', marker='o', label='label2', s=10, alpha=0.6)
+"""
+color: 颜色
+marker: 标记样式
+label: 图例
+s: 标记大小
+alpha: 透明度
+"""
+
+#画柱状图
+num_of_algo = 3     #参与绘图的算法数目
+num_of_data = 5     #数据数目
+bar_width = 0.30    #柱宽
+
+#设置每个柱子的x坐标
+index = np.arange(0, num_of_data, 1)
+
+# 画柱状图 (data是 num_of_algo*num_of_data 的矩阵)
+for i in range(num_of_algo):
+    plt.bar(index + i * bar_width, data[i], bar_width, label=label[i], facecolor=facecolor[i], edgecolor=edgecolor[i], hatch=hatch[i])
+    """
+    index + i * bar_width: 柱子的x坐标
+    data[i]: 柱子的高度
+    bar_width: 柱宽
+    label: 图例
+    facecolor: 柱子填充颜色
+    edgecolor: 柱子边框颜色
+    hatch: 柱子填充样式
+    """
+    for a, b in zip(index + i * bar_width, data[i]):
+        # a: 文字的x坐标，b: 文字的y坐标
+        plt.text(a, b, '%.3f' % b, ha='center', va='bottom', fontsize=5, rotation=90)
+
+# 设置x轴刻度在中间
+plt.xticks(index + (num_of_algo-1)*bar_width / 2,  index)
+
+
+
+plt.legend(bbox_to_anchor=(0.9, 1.2), fontsize=30, ncol=2, markerscale=2, frameon=True)
+"""
+bbox_to_anchor: 图例位置
+fontsize: 字体大小
+ncol: 列数
+markerscale: 标记大小
+frameon: 是否显示边框
+"""
+
+#紧致布局
+plt.tight_layout()
+#保存为矢量图
+plt.savefig("multicol_traverse.svg", format="svg")
+plt.show()
 ```
 
 ## Faker
