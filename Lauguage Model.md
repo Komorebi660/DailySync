@@ -124,7 +124,14 @@ $$y_t = \sigma_2(Vh_t + b_2)$$
 
 上述模型的问题在于只将编码器的**最后一个节点**的结果进行了输出, 但是对于一个序列长度特别长的特征来说, 这种方式无疑将会*遗忘大量的前面时间片的特征*。与其输入最后一个时间片的结果, 不如将每个时间片的输出都提供给解码器, 那么解码器如何使用这些特征就是Attention的作用。
 
-Attention是一个介于编码器和解码器之间的一个接口, 用于将编码器的编码结果以一种更有效的方式传递给解码器。一个特别简单且有效的方式就是让解码器知道哪些特征重要, 哪些特征不重要, 即让解码器明白如何进行*当前时间片的预测结果和输入编码的对齐*, Attention模型学习了编码器和解码器的对齐方式, 因此也被叫做对齐模型(Alignment Model)。Attention有两种类型, 一种是作用到编码器的全部时间片, 叫做**Global Attention**, 另外一种值作用到时间片的一个子集, 叫做**Local Attention**, 这里介绍的Attention都是全局的。
+Attention是一个介于编码器和解码器之间的一个接口, 用于将编码器的编码结果以一种更有效的方式传递给解码器。一个特别简单且有效的方式就是让解码器知道哪些特征重要, 哪些特征不重要, 即让解码器明白如何进行*当前时间片的预测结果和输入编码的对齐*, Attention模型学习了编码器和解码器的对齐方式, 因此也被叫做对齐模型(Alignment Model), 如下图所示。
+
+<div align=center>
+<img src="./figs/attention_result.jpg" width=40%/>
+</div>
+</br>
+
+Attention有两种类型, 一种是作用到编码器的全部时间片, 叫做**Global Attention**, 另外一种值作用到时间片的一个子集, 叫做**Local Attention**, 这里介绍的Attention都是全局的。
 
 <div align=center>
 <img src="./figs/attention.jpg" width=60%/>
@@ -200,9 +207,9 @@ $$Z = LayerNorm(Y + \underbrace{\max (0, YW_1+b_1)W_2+b_2}_{\mathbf{FeedForward}
 
 Decoder和Encoder结构基本相似，每一个Decoder包含两个个Multi-Head Attention层和一个Feed Forward层, 但这两个Multi-Head Attention层和Encoder的略有区别。
 
-第一个 Multi-Head Attention 层中的 Self-Attention 带有**Mask操作**。这是因为在翻译的过程中是顺序翻译的，即翻译完第 $i$ 个单词，才可以翻译第 $i+1$ 个单词, 因此Decoder在解码第 $i$ 个词时只能看到前 $i-1$ 个词的信息。(*注意，这里的Mask和Transformer中输入给最下层Decoder embeddings时的Mask操作不同, 那个是直接Mask当前翻译词及之后的所有embedding信息*)
+第一个 Multi-Head Attention 层中的 Self-Attention 带有**Mask操作**。这是因为在翻译的过程中是顺序翻译的，即翻译完第 $i$ 个单词，才可以翻译第 $i+1$ 个单词, 因此Decoder在解码第 $i$ 个词时只能看到前 $i-1$ 个词的信息。(*注意，这里的Mask和Transformer中输入给最下层Decoder embeddings时的Mask操作不同, 那个是直接Mask当前时间片生成词及之后的所有embedding信息*)
 
-具体的操作是在计算softmax**之前**给 $QK^T$ 矩阵按位乘上一个Mask矩阵, 如下图所示:
+具体的操作是在计算softmax**之前**给 $QK^T$ 矩阵**按位乘**上一个Mask矩阵, 如下图所示:
 
 <div align=center>
 <img src="./figs/mask_attention.jpg" width=50%/>
