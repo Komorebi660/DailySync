@@ -43,7 +43,7 @@ There is a cat on the desk.
 
 错误出现在对单词的计数不合理, 一个解决方法是, 我们规定*实际翻译结果中每个单词的计数*不得超过在*单个参考翻译中出现的最大次数*。在上述`is is is is is is`翻译结果中, 单词`is`在参考翻译中出现的最大次数是 $1$ , 因此, 只能被记 $1$ 次, 评分为 $1/6$ , 这是比较合理的。
 
-另外结果的顺序也需要考虑, 假如实际翻译句子为`desk the on cat a is there`, 那么得分为 $7/7$ , 虽然单词都出现了, 但结果却没有意义。因此, 根据“平滑”的思想, 进一步考虑`1-gram`到`4-gram`。具体来说：我们除了对单个单词计数, 还对2、3、4个单词组成的词组进行计数。$n = 1,2,3,4$ 时 , 每 $n$ 个单词为一组, 设实际翻译中每个元素为 $x_i^n$ , 则有:
+另外结果的顺序也需要考虑, 假如实际翻译句子为`desk the on cat a is there`, 那么得分为 $7/7$ , 虽然单词都出现了, 但结果却没有意义。因此, 根据“平滑”的思想, 进一步考虑`1-gram`到`4-gram`。具体来说：我们除了对单个单词计数, 还对2、3、4个单词组成的词组进行计数。 $n = 1,2,3,4$ 时 , 每 $n$ 个单词为一组, 设实际翻译中每个元素为 $x_i^n$ , 则有:
 
 $$score_n = \sum_i{x_i^n在参考翻译中出现的最大次数}\quad / \quad \sum_i{x_i^n在实际翻译中出现的次数}$$
 
@@ -151,15 +151,40 @@ Transformer也是一种Encoder-Decoder模型, 论文中提到的模型包含6层
 
 Transformer的大致工作流程如下:
 
-- 获取输入文本的embedding, 包含词向量和位置向量。
-- 将所有embedding拼接为一个矩阵 $X$ , 作为Encoder的输入, 通过6层Encoder得到输出与输入大小相同的词编码矩阵 $C$ 。
-- $C$ 传入到Decoder中, 同时最下层Decoder还会接收mask过的 $X$ (翻译第 $i$ 个词时 mask $i$ 以后的所有embedding)。Decoder的最后输出再经过一个全连接层以及softmax得到反映词概率的向量。
+- 获取输入文本的embedding, 包含**词向量**(可以通过Word2Vec等方式得到，也可以在Transformer中得到)和**位置向量**(因为Transformer不采用RNN的结构，而是使用全局信息，这样就不能利用单词的顺序信息，位置向量可以通过训练得到也可以用公式计算得到)。
+- 将所有embedding拼接为一个矩阵 $X$ 作为Encoder的输入, 通过6层Encoder得到与输入大小相同的词编码矩阵 $C$ 。
+- 把 $C$ 传入到Decoder中, 同时最下层Decoder还会接收mask过的 $X$ (翻译第 $i$ 个词时 mask $i$ 及以后的所有embedding)。Decoder的最后输出再经过一个全连接层以及softmax得到反映词概率的向量。
 
 接下来我们将先介绍自注意力机制(self-Attenion), 然后详细介绍Encoder和Decoder的内部结构。
 
 ### Self-Attention
 
+Self-Attention 的计算过程如下:
 
+<div align=center>
+<img src="./figs/self-attention.png" width=60%/>
+</div>
+</br>
+
+- 首先将输入的词向量 $X$ 通过线性变换得到 $Q, K, V$ 三个矩阵(`Query`, `Key`, `Value`)。
+
+$$Q=W_Q \times X$$
+
+$$K=W_K \times X$$
+
+$$V=W_V \times X$$
+
+- 计算`Query`和`Key`的相似度, 其中 $d_k$ 是方阵 $QK^T$ 的维度, 等于文本词的数目。$QK^T$ 的第 $i$ 行表示第 $i$ 个词与所有词的相似度。
+
+$$Score(Q,K) = softmax \left( \frac{Q \times K^T}{\sqrt{d_k}} \right)$$
+
+- 用 $Score$ 和`Value`相乘得到`Attention`。结果有 $d_k$ 行, 第 $i$ 行是所有词的 `Value` 加权求和得到的注意力向量, 权重为第 $i$ 个词和其它词的相似度。
+
+$$Attention(Q,K,V) = Score(Q,K) \times V$$
+
+Multi-Head Attention 是由多个 Self-Attention 组合形成的, 首先将输入 $X$ 分别传递到 $h$ 个不同的 Self-Attention 中，计算得到 $h$ 个输出矩阵 $Z_1, \cdots, Z_h$ , 接着将它们拼接(Concat)在一起, 然后通过一个Linear层, 得到和输入维度相同的最终的输出 $Z$ , 计算公式如下:
+
+$$Z = W_Z \times [Z_1, \cdots, Z_h]^T$$
 
 ### Encoder
 
