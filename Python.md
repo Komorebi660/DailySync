@@ -10,6 +10,7 @@
     - [set](#set)
     - [list](#list)
   - [numpy](#numpy)
+  - [Faker](#faker)
 
 ## data load & store
 
@@ -123,12 +124,20 @@ b = list(map(int, a)) # [1, 2, 3]
 ## numpy
 
 ```python
+# 依概率p从data中随机采样size个数据
+r = np.random.choice(data, p=p, size=10)
+
 # find index of a given value in the array
 a = np.array([1, 3, 3, 4, 5])
-np.where(a == 3)[0]     # [1, 2]
+index = np.where(a == 3)[0]     # [1, 2]
+b = a[index]                    # [3, 3]
 
 # L2 norm
-np.linalg.norm(a)       # 7.416198487095663
+x = np.array([[1, 2, 3], [4, 5, 6], [7, 8, 9]])
+#按行计算
+np.linalg.norm(x, axis=1)       # [3.74165739, 8.77496439, 13.92838828]
+#按列计算
+np.linalg.norm(x, axis=0)       # [9.53939201, 11.22497216, 12.12435565]
 
 # arg sort
 a = np.array([4, 2, 1, 5, 3])
@@ -140,4 +149,22 @@ np.argsort(a)
 a = np.array([[1, 2, 3], [4, 5, 6], [7, 8, 9]])
 np.delete(a, 1, axis=0) # [1, 2, 3], [7, 8, 9]
 np.delete(a, 1, axis=1) # [1, 3], [4, 6], [7, 9]
+```
+
+## Faker
+
+install:
+
+```bash
+pip install faker
+```
+
+usage: https://www.jianshu.com/p/6bd6869631d9
+
+
+```python
+from faker import Faker
+
+fake = Faker()
+location_list = [fake.country() for _ in range(200)]
 ```
