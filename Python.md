@@ -39,6 +39,29 @@ with open("xxx.pt", 'rb') as f:
     data1, data2 = pickle.load(f)
 ```
 
+**Warning: `pickle.load()`不信任的文件可能会带来安全隐患。** `pickle`是专门为python设计的序列化工具，它可以将python中的对象转换为字节流，并能复原为python对象。但是，python为`class`添加了一个特别的`__reduce__()` method用来告诉`pickle`如何复原数据，我们可以利用这一method执行不安全的代码。一个例子如下:
+
+```python
+import pickle
+import subprocess
+
+class Dangerous:
+    def __reduce__(self):
+        return (
+            subprocess.Popen, 
+            (('/bin/bash', "-c", "ls"),),
+        )
+d = Dangerous()
+
+with open("data.pt", 'wb') as f:
+    pickle.dump(d, f)
+
+with open("data.pt", 'rb') as f:
+    data = pickle.load(f)
+```
+
+执行上述代码，在`load pickle`文件时，会执行`Dangerous`的`__reduce__`method用于恢复数据，在上例中就是打开了`bash`并执行`ls`命令。可以发现，如果随意加载`pickle`文件，可能会带来安全隐患。
+
 ### `.bin`
 
 ```python
