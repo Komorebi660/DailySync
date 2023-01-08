@@ -198,9 +198,28 @@ $$Z = LayerNorm(Y + \underbrace{\max (0, YW_1+b_1)W_2+b_2}_{\mathbf{FeedForward}
 
 ### Decoder
 
-每一个Encoder包含两个个Multi-Head Attention层和一个Feed Forward层, 且这两个Multi-Head Attention层和Encoder略有区别。
+Decoder和Encoder结构基本相似，每一个Decoder包含两个个Multi-Head Attention层和一个Feed Forward层, 但这两个Multi-Head Attention层和Encoder的略有区别。
 
-第一个Multi-Head Attention层带有Mask操作。
+第一个 Multi-Head Attention 层中的 Self-Attention 带有**Mask操作**。这是因为在翻译的过程中是顺序翻译的，即翻译完第 $i$ 个单词，才可以翻译第 $i+1$ 个单词, 因此Decoder在解码第 $i$ 个词时只能看到前 $i-1$ 个词的信息。(*注意，这里的Mask和Transformer中输入给最下层Decoder embeddings时的Mask操作不同, 那个是直接Mask当前翻译词及之后的所有embedding信息*)
+
+具体的操作是在计算softmax**之前**给 $QK^T$ 矩阵按位乘上一个Mask矩阵, 如下图所示:
+
+<div align=center>
+<img src="./figs/mask_attention.jpg" width=50%/>
+</div>
+</br>
+
+之后的操作和原始的Self-Attention一样, 只不过用 $\mathbf{Mask}\ QK^T$ 替代了原始的 $QK^T$ .
+
+第二个 Multi-Head Attention 主要的区别在于其中 Self-Attention 的 $K$ , $V$ 矩阵不是用上一个Decoder block的输出 $X$ 计算的，而是使用 Encoder编码出信息矩阵 $C$ 计算的。这样做的好处是在解码的时候，每一个词都可以利用到Encoder编码的所有单词的信息(这些信息无需Mask)。
+
+因此, Decoder的整个计算过程可以描述为:
+
+$$X_2 = LayerNorm(X_1 + \mathbf{MaskMultiHeadAttention}(X_1))$$
+
+$$Y = LayerNorm(X_2 + \mathbf{MultiHeadAttention}(C, X_2))$$
+
+$$Z = LayerNorm(Y + \mathbf{FeedForward}(Y))$$
 
 ## Reference
 
