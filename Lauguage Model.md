@@ -137,7 +137,7 @@ Attention计算主要可以分为5步:
 - 第二步: 用Decoder当前隐层状态 $h_{t}^{\prime}$ 与Encoder得到的隐层状态 $h_1, \cdots, h_T$ 计算得分 $score_1^t, \cdots, score_T^t$ (如使用点乘操作), 本质是计算当前解码的时间片与编码器的每个时间片的**相关性**。
 - 第三步: 用softmax函数计算得到权重 $a_1^t, \cdots, a_T^t$ .
 - 第四步: 用权重 $a_1^t, \cdots, a_T^t$ 与Encoder得到的隐层状态 $h_1, \cdots, h_T$ 进行按位乘操作, 得到当前时间片的注意力特征(Attention Vector) $z_1^t, \cdots, z_T^t$ 。
-- 第五步: 把得到的注意力特征变换为一个单一的向量, 可以是求和、拼接等其它方法, 把这一向量输入到Decoder中计算。
+- 第五步: 把得到的注意力特征变换为一个单一的向量, 可以是求和、拼接等其它方法, 把这一向量输入到Decoder中进行下一个时刻的计算。
 
 ## [Transformer](https://arxiv.org/abs/1706.03762)
 
@@ -153,7 +153,7 @@ Transformer的大致工作流程如下:
 
 - 获取输入文本的embedding, 包含**词向量**(可以通过Word2Vec等方式得到，也可以在Transformer中得到)和**位置向量**(因为Transformer不采用RNN的结构，而是使用全局信息，这样就不能利用单词的顺序信息，位置向量可以通过训练得到也可以用公式计算得到)。
 - 将所有embedding拼接为一个矩阵 $X$ 作为Encoder的输入, 通过6层Encoder得到与输入大小相同的词编码矩阵 $C$ 。
-- 把 $C$ 传入到Decoder中, 同时最下层Decoder还会接收mask过的 $X$ (翻译第 $i$ 个词时 mask $i$ 及以后的所有embedding)。Decoder的最后输出再经过一个全连接层以及softmax得到反映词概率的向量。
+- 把 $C$ 传入到Decoder中, 同时最下层Decoder还会接收已经预测出的所有结果作为输入(具体实现为mask)。Decoder的最后输出再经过一个全连接层以及softmax得到反映词概率的向量。
 
 接下来我们将先介绍自注意力机制(self-Attenion), 然后详细介绍Encoder和Decoder的内部结构。
 
@@ -188,11 +188,19 @@ $$Z = W_Z \times [Z_1, \cdots, Z_h]^T$$
 
 ### Encoder
 
+每一个Encoder包含一个Multi-Head Attention层和一个Feed Forward层, 且使用残差连接和Layer Normalization(将输入变换为均值方差一致)来解决多层网络训练的退化问题并加快收敛速度。具体的Encoder的计算过程如下:
 
+$$Y = LayerNorm(X + \mathbf{MultiHeadAttention}(X))$$
+
+$$Z = LayerNorm(Y + \underbrace{\max (0, YW_1+b_1)W_2+b_2}_{\mathbf{FeedForward}(Y)})$$
+
+其中Feed Forward Net是两个全连接层, 第一层激活函数为Relu, 第二层没有激活函数。
 
 ### Decoder
 
+每一个Encoder包含两个个Multi-Head Attention层和一个Feed Forward层, 且这两个Multi-Head Attention层和Encoder略有区别。
 
+第一个Multi-Head Attention层带有Mask操作。
 
 ## Reference
 
