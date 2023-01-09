@@ -17,7 +17,7 @@ def load_passage_filter(path):
         tsvreader_query = csv.reader(f, delimiter="\t")
         for [tag, _] in tsvreader_query:
             tags.append(tag)
-        f.close()
+
     return np.array(tags)
 
 

@@ -10,7 +10,6 @@ def load_passages(path):
         with open(path + "%d.pt" % i, "rb") as f:
             embedding, _ = pickle.load(f)
             corpus.append(embedding)
-        f.close()
         print("finish %d" % i)
     corpus = np.vstack(corpus)
     print(corpus.shape)
@@ -24,7 +23,6 @@ def load_passage_filter(path):
         tsvreader_query = csv.reader(f, delimiter="\t")
         for [tag, country] in tsvreader_query:
             location.append(tag)
-        f.close()
     location = np.array(location)
     print("Load Location End !!!")
     return location

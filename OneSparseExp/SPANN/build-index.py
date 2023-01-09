@@ -6,7 +6,7 @@ import argparse
 parser = argparse.ArgumentParser()
 parser.add_argument('--passage-path-prefix', type=str, default="../embedding_data/corpus/split0",
                     help='prefix of path to passage embeddings')
-parser.add_argument('--n', type=int, default=841823,
+parser.add_argument('--n', type=int, default=8841823,
                     help='number of inserted data')
 args = parser.parse_args()
 
@@ -19,7 +19,6 @@ for i in range(10):
     with open(args.passage_path_prefix + "%d.pt" % i, "rb") as f:
         embedding, _ = pickle.load(f)
         corpus.append(embedding)
-    f.close()
     print("finish %d" % i)
 
 corpus = np.vstack(corpus)
