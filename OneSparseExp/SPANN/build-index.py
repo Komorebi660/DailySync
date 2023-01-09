@@ -4,8 +4,10 @@ import numpy as np
 import argparse
 
 parser = argparse.ArgumentParser()
-parser.add_argument('--passage-path', type=str, default="../embedding_data/corpus",
-                        help='path to passage embeddings folder')
+parser.add_argument('--passage-path-prefix', type=str, default="../embedding_data/corpus/split0",
+                    help='prefix of path to passage embeddings')
+parser.add_argument('--n', type=int, default=841823,
+                    help='number of inserted data')
 args = parser.parse_args()
 
 # add SPTAG Release folder to path
@@ -14,13 +16,14 @@ import SPTAG
 
 corpus = []
 for i in range(10):
-    with open(args.passage_path + "/split0%d.pt" % i, "rb") as f:
+    with open(args.passage_path_prefix + "%d.pt" % i, "rb") as f:
         embedding, _ = pickle.load(f)
         corpus.append(embedding)
     f.close()
     print("finish %d" % i)
 
 corpus = np.vstack(corpus)
+corpus = corpus[:args.n, :]  # get first n data
 vector_number, vector_dim = corpus.shape
 print(vector_number, vector_dim)
 

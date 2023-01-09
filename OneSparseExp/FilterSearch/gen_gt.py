@@ -7,7 +7,7 @@ def load_passages(path):
     print("Load Embedding Begin !!!")
     corpus = []
     for i in range(10):
-        with open(path + "/split0%d.pt" % i, "rb") as f:
+        with open(path + "%d.pt" % i, "rb") as f:
             embedding, _ = pickle.load(f)
             corpus.append(embedding)
         f.close()
@@ -60,8 +60,8 @@ def gen(passage_path, passage_filter_path, query_path, query_filter_path, result
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
-    parser.add_argument('--passage-path', type=str, default="../embedding_data/corpus",
-                        help='path to passage embeddings folder')
+    parser.add_argument('--passage-path-prefix', type=str, default="../embedding_data/corpus/split0",
+                        help='prefix of path to passage embeddings')
     parser.add_argument('--passage-filter-path', type=str, default="passage_filter.tsv",
                         help='path to filter data of passages')
     parser.add_argument('--query-path', type=str, default="../embedding_data/query/query_dev_small.pt",
@@ -74,4 +74,4 @@ if __name__ == "__main__":
 
     args = parser.parse_args()
 
-    gen(args.passage_path, args.passage_filter_path, args.query_path, args.query_filter_path, args.result_path)
+    gen(args.passage_path_prefix, args.passage_filter_path, args.query_path, args.query_filter_path, args.result_path)
