@@ -17,6 +17,8 @@
   - [Filter Search](#filter-search)
   - [Update Performance](#update-performance)
     - [preparation](#preparation)
+    - [Run SPFresh](#run-spfresh)
+    - [Run with rebuild method](#run-with-rebuild-method)
 
 ## Get Data
 
@@ -295,8 +297,9 @@ cd boost_1_67_0
 ./b2 install
 
 # Then add BOOST_INCLUDEDIR and BOOST_LIBRARYDIR to ~/.bashrc
-export BOOST_INCLUDEDIR=./boost/include:$BOOST_INCLUDEDIR
-export BOOST_LIBRARYDIR=./boost/lib:$BOOST_LIBRARYDIR
+export BOOST_ROOT=prefix:$BOOST_ROOT
+export BOOST_INCLUDEDIR=prefix/include:$BOOST_INCLUDEDIR
+export BOOST_LIBRARYDIR=prefix/lib:$BOOST_LIBRARYDIR
 ```
 
 Clone `sptag` and install:
@@ -324,7 +327,7 @@ make -j8
 代码见[这里](./SPANN/build-index.py), 使用下面的命令运行脚本构建索引(可能需要几个小时)。
 
 ```bash
-python3 -u build-index.py --passage-path "../embedding_data/corpus" 2>&1 > build-index.log &
+python3 -u build-index.py --passage-path-prefix "../embedding_data/corpus/split0" 2>&1 > build-index.log &
 ```
 
 构建完成后得到index的目录如下:
@@ -424,7 +427,7 @@ python3 gen_gt.py \
   --query-filter-path "query_filter.tsv" \
   --passage-filter-path "passage_filter.tsv" \
   --query-path "../embedding_data/query/query_dev_small.pt" \
-  --passage-path "../embedding_data/corpus" \
+  --passage-path-prefix "../embedding_data/corpus/split0" \
   --result-path "gt.tsv"
 
 python3 spann_filter.py \
@@ -494,4 +497,120 @@ mkdir build
 cd build
 cmake -DCMAKE_BUILD_TYPE=Release .. # 注意观察各项环境的输出是否正确，不正确可能需要手动调整CMakeLists.txt
 make -j 16
+```
+
+### Run SPFresh
+
+将数据拆分, `base`数据为前 $841,823$ 条, 剩余 $8,000,000$ 条数据将被拆分为**10份**依次插入。运行SPFresh我们首先需要将embeddings转化为`binary`格式, 代码在[这里](./UpdatePerf/pack_vectors.py), 可以使用以下命令执行:
+
+```bash
+python3 pack_vectors.py \
+  --passage-path-prefix "../embedding_data/corpus/split0" \
+  --query-path "../embedding_data/query/query_dev_small.pt" \
+  --query-bin-path "query_vectors.bin" \
+  --corpus-bin-path "doc_vectors.bin" \
+  --corpus-base-bin-path "doc_vectors_base.bin"
+```
+
+修改`SPFresh/Test/src/SPFreshTest.cpp`最后`ini`文件的位置, 调整[`ini`文件](./UpdatePerf/msmarco.ini)中路径的位置, 然后运行`Release`目录下的`SPFreshTest`:
+
+```bash
+nohup ./SPTAGTest 2>&1 > msmarco.log &
+```
+
+搜索结果会呈现在指定的文件夹中, 结果是以二进制保存的, 因此需要进行转换, 转换脚本见[此](./UpdatePerf/bin2tsv.py), 可以使用以下命令执行:
+
+```bash
+python3 bin2tsv.py \
+  --query-path "/data/data5/v-yaoqichen/data/queries.dev.small.tsv" \
+  --bin-result-path "./results/result-841k" \
+  --tsv-result-path "./results/result-841k.tsv" \
+```
+
+### Run with rebuild method
+
+每次新插入数据后便rebuild index, 再search query, 最后测`recall`.
+
+```bash
+cd SPTAG/Release
+
+python3 -u build-index.py \
+  --passage-path-prefix "../embedding_data/corpus/split0" \
+  --n 841823
+python3 -u search.py \
+  --query-path "../embedding_data/query/query_dev_small.pt" \
+  --search-result-path "./results/qrels-841k.tsv" \
+rm -rf ./msmarco
+
+python3 -u build-index.py \
+  --passage-path-prefix "../embedding_data/corpus/split0" \
+  --n 1641823
+python3 -u search.py \
+  --query-path "../embedding_data/query/query_dev_small.pt" \
+  --search-result-path "./results/qrels-1641k.tsv" \
+rm -rf ./msmarco
+
+python3 -u build-index.py \
+  --passage-path-prefix "../embedding_data/corpus/split0" \
+  --n 2441823
+python3 -u search.py \
+  --query-path "../embedding_data/query/query_dev_small.pt" \
+  --search-result-path "./results/qrels-2441k.tsv" \
+rm -rf ./msmarco
+
+python3 -u build-index.py \
+  --passage-path-prefix "../embedding_data/corpus/split0" \
+  --n 3241823
+python3 -u search.py \
+  --query-path "../embedding_data/query/query_dev_small.pt" \
+  --search-result-path "./results/qrels-3241k.tsv" \
+rm -rf ./msmarco
+
+python3 -u build-index.py \
+  --passage-path-prefix "../embedding_data/corpus/split0" \
+  --n 4841823
+python3 -u search.py \
+  --query-path "../embedding_data/query/query_dev_small.pt" \
+  --search-result-path "./results/qrels-4841k.tsv" \
+rm -rf ./msmarco
+
+python3 -u build-index.py \
+  --passage-path-prefix "../embedding_data/corpus/split0" \
+  --n 5641823
+python3 -u search.py \
+  --query-path "../embedding_data/query/query_dev_small.pt" \
+  --search-result-path "./results/qrels-5641k.tsv" \
+rm -rf ./msmarco
+
+python3 -u build-index.py \
+  --passage-path-prefix "../embedding_data/corpus/split0" \
+  --n 6441823
+python3 -u search.py \
+  --query-path "../embedding_data/query/query_dev_small.pt" \
+  --search-result-path "./results/qrels-6441k.tsv" \
+rm -rf ./msmarco
+
+python3 -u build-index.py \
+  --passage-path-prefix "../embedding_data/corpus/split0" \
+  --n 7241823
+python3 -u search.py \
+  --query-path "../embedding_data/query/query_dev_small.pt" \
+  --search-result-path "./results/qrels-7241k.tsv" \
+rm -rf ./msmarco
+
+python3 -u build-index.py \
+  --passage-path-prefix "../embedding_data/corpus/split0" \
+  --n 8041823
+python3 -u search.py \
+  --query-path "../embedding_data/query/query_dev_small.pt" \
+  --search-result-path "./results/qrels-8041k.tsv" \
+rm -rf ./msmarco
+
+python3 -u build-index.py \
+  --passage-path-prefix "../embedding_data/corpus/split0" \
+  --n 8841823
+python3 -u search.py \
+  --query-path "../embedding_data/query/query_dev_small.pt" \
+  --search-result-path "./results/qrels-8841k.tsv" \
+rm -rf ./msmarco
 ```
