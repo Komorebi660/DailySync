@@ -11,8 +11,11 @@ def search(query_path, result_path, latency_path):
     index = SPTAG.AnnIndex.Load('msmarco')
 
     with open(query_path, 'rb') as f, \
-        open(result_path, 'w', encoding="utf8") as out, \
-        open(latency_path, 'w', encoding="utf8") as out_latency:
+            open(result_path, 'w', encoding="utf8") as out:
+
+        if len(latency_path) != 0:
+            out_latency = open(latency_path, 'w', encoding="utf8")
+
             embeddings, ids = pickle.load(f)
             for idx in range(len(ids)):
                 qid = int(ids[idx])
@@ -25,12 +28,17 @@ def search(query_path, result_path, latency_path):
                 #print(result)
                 for i in range(100):
                     out.write(f"{qid} 0 {result[0][i]} {i+1} {100-result[1][i]} IndriQueryLikelihood\n")
-                out_latency.write(f"{qid}\t{latency}\n")
+                if len(latency_path) != 0:
+                    out_latency.write(f"{qid}\t{latency}\n")
 
                 if idx % 100 == 0:
                     out.flush()
-                    out_latency.flush()
+                    if len(latency_path) != 0:
+                        out_latency.flush()
                     print(f"{idx} queries searched...")
+
+            if len(latency_path) != 0:
+                out_latency.close()
             print(f"{len(ids)} queries searched.")
 
 
@@ -40,8 +48,8 @@ if __name__ == "__main__":
                         help='path to query embeddings')
     parser.add_argument('--search-result-path', type=str, default="./spann_qrels.tsv",
                         help='path to save search result')
-    parser.add_argument('--latency-result-path', type=str, default="./spann_latency.tsv",
-                        help='path to save latency result')
+    parser.add_argument('--latency-result-path', type=str, default="",
+                        help='path to save latency result, set `None` to prevent output latency')
 
     args = parser.parse_args()
 
