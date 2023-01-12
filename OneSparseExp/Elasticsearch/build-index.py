@@ -11,6 +11,8 @@ user = 'elastic'
 password = ''
 cert = 'http_ca.crt'
 
+s = requests.session()
+s.keep_alive = False  # avoid too many connections
 
 def str2bool(v):
     if isinstance(v, bool):
@@ -47,8 +49,8 @@ def create_index(index_name):
             }
         }
     }
-    response = requests.request("PUT", url, headers=headers, data=json.dumps(payload), verify=cert, auth=(user, password))
-    assert response.ok
+    response = s.request("PUT", url, headers=headers, data=json.dumps(payload), verify=cert, auth=(user, password))
+    print(response.text)
 
 
 def add_data_to_index(index_name, docid, doc, embedding):
@@ -62,7 +64,7 @@ def add_data_to_index(index_name, docid, doc, embedding):
         "embedding": embedding,
     }
 
-    response = requests.request("PUT", url, headers=headers, data=json.dumps(payload), verify=cert, auth=(user, password))
+    response = s.request("PUT", url, headers=headers, data=json.dumps(payload), verify=cert, auth=(user, password))
     if not response.ok:
         print(response.text)
         sys.exit(1)
@@ -79,7 +81,7 @@ def update_doc_to_index(index_name, docid, doc):
         }
     }
 
-    response = requests.request("POST", url, headers=headers, data=json.dumps(payload), verify=cert, auth=(user, password))
+    response = s.request("POST", url, headers=headers, data=json.dumps(payload), verify=cert, auth=(user, password))
     if not response.ok:
         print(response.text)
         sys.exit(1)
@@ -96,7 +98,7 @@ def update_emdedding_to_index(index_name, docid, embedding):
         }
     }
 
-    response = requests.request("POST", url, headers=headers, data=json.dumps(payload), verify=cert, auth=(user, password))
+    response = s.request("POST", url, headers=headers, data=json.dumps(payload), verify=cert, auth=(user, password))
     if not response.ok:
         print(response.text)
         sys.exit(1)

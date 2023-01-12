@@ -12,6 +12,8 @@ cert = 'http_ca.crt'
 
 index_name = "ms-marco"
 
+s = requests.session()
+s.keep_alive = False  # avoid too many connections
 
 def search_with_inverted_index_and_knn(inverted_index_key, knn_key, knn_weight, query, query_embedding):
     """return a tuple(docid, rank, score, latency)
@@ -38,7 +40,7 @@ def search_with_inverted_index_and_knn(inverted_index_key, knn_key, knn_weight, 
             "boost": knn_weight
         },
     }
-    response = requests.request("GET", url, headers=headers, data=json.dumps(payload), verify=cert, auth=(user, password))
+    response = s.request("GET", url, headers=headers, data=json.dumps(payload), verify=cert, auth=(user, password))
     res = json.loads(response.text)
 
     latency = response.elapsed.total_seconds()
@@ -61,7 +63,7 @@ def search_with_inverted_index(key, query):
             },
         },
     }
-    response = requests.request("GET", url, headers=headers, data=json.dumps(payload), verify=cert, auth=(user, password))
+    response = s.request("GET", url, headers=headers, data=json.dumps(payload), verify=cert, auth=(user, password))
     res = json.loads(response.text)
 
     latency = response.elapsed.total_seconds()
@@ -85,7 +87,7 @@ def search_with_knn(key, query_embedding):
             "num_candidates": 100
         }
     }
-    response = requests.request("GET", url, headers=headers, data=json.dumps(payload), verify=cert, auth=(user, password))
+    response = s.request("GET", url, headers=headers, data=json.dumps(payload), verify=cert, auth=(user, password))
     res = json.loads(response.text)
 
     latency = response.elapsed.total_seconds()

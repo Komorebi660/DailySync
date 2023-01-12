@@ -162,62 +162,62 @@ python3 test.py --create-index false --index-name my-index
 
 ```bash
 #create index
-nohup python3 -u build_index.py \
+nohup python3 -u build-index.py \
 --create-index true \
 --index-name "ms-marco" \
 --path-doc-embedding "../embedding_data/corpus/split00.pt" \
 --path-doc "../data/collection.tsv" > 0.log 2>&1 &
 
 #insert data & build index
-nohup python3 -u build_index.py \
+nohup python3 -u build-index.py \
 --create-index false \
 --index-name "ms-marco" \
 --path-doc-embedding "../embedding_data/corpus/split01.pt" \
 --path-doc "../data/collection.tsv" > 1.log 2>&1 &
 
-nohup python3 -u build_index.py \
+nohup python3 -u build-index.py \
 --create-index false \
 --index-name "ms-marco" \
 --path-doc-embedding "../embedding_data/corpus/split02.pt" \
 --path-doc "../data/collection.tsv" > 2.log 2>&1 &
 
-nohup python3 -u build_index.py \
+nohup python3 -u build-index.py \
 --create-index false \
 --index-name "ms-marco" \
 --path-doc-embedding "../embedding_data/corpus/split03.pt" \
 --path-doc "../data/collection.tsv" > 3.log 2>&1 &
 
-nohup python3 -u build_index.py \
+nohup python3 -u build-index.py \
 --create-index false \
 --index-name "ms-marco" \
 --path-doc-embedding "../embedding_data/corpus/split04.pt" \
 --path-doc "../data/collection.tsv" > 4.log 2>&1 &
 
-nohup python3 -u build_index.py \
+nohup python3 -u build-index.py \
 --create-index false \
 --index-name "ms-marco" \
 --path-doc-embedding "../embedding_data/corpus/split05.pt" \
 --path-doc "../data/collection.tsv" > 5.log 2>&1 &
 
-nohup python3 -u build_index.py \
+nohup python3 -u build-index.py \
 --create-index false \
 --index-name "ms-marco" \
 --path-doc-embedding "../embedding_data/corpus/split06.pt" \
 --path-doc "../data/collection.tsv" > 6.log 2>&1 &
 
-nohup python3 -u build_index.py \
+nohup python3 -u build-index.py \
 --create-index false \
 --index-name "ms-marco" \
 --path-doc-embedding "../embedding_data/corpus/split07.pt" \
 --path-doc "../data/collection.tsv" > 7.log 2>&1 &
 
-nohup python3 -u build_index.py \
+nohup python3 -u build-index.py \
 --create-index false \
 --index-name "ms-marco" \
 --path-doc-embedding "../embedding_data/corpus/split08.pt" \
 --path-doc "../data/collection.tsv" > 8.log 2>&1 &
 
-nohup python3 -u build_index.py \
+nohup python3 -u build-index.py \
 --create-index false \
 --index-name "ms-marco" \
 --path-doc-embedding "../embedding_data/corpus/split09.pt" \
