@@ -3,6 +3,7 @@
 - [Ubuntu常用命令](#ubuntu常用命令)
   - [查询文件占用空间](#查询文件占用空间)
   - [进程管理](#进程管理)
+  - [Git](#git)
   - [关于`Windows`命令行](#关于windows命令行)
 
 ## 查询文件占用空间
@@ -26,6 +27,36 @@ ps -ef | grep process_name
 
 #杀死进程
 kill -s 9 pid
+```
+
+## Git
+
+```bash
+# init setting
+git config --global user.name "username"
+git config --global user.email email-address
+
+# generate ssh key
+ssh-keygen -t rsa -C email-address
+ssh -T git@github.com
+
+# init a repo
+git init
+git add *
+git commit -m "add ..."
+git remote add origin git@github.com:Komorebi660/[仓库名].git
+git push -u origin master
+
+# create new branch
+git checkout -b xxx
+git push origin xxx
+
+# merge branch
+git fetch origin main
+git merge origin/main
+
+# reduce .git size
+git gc --prune=now
 ```
 
 ## 关于`Windows`命令行
