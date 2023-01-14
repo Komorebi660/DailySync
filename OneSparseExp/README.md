@@ -257,6 +257,8 @@ python3 -u search.py \
 --knn-weight 8000
 ```
 
+[KNN + Inverted Index官方文档](https://www.elastic.co/guide/en/elasticsearch/reference/8.4/knn-search.html#approximate-knn)
+
 ### utils
 
 ```bash
