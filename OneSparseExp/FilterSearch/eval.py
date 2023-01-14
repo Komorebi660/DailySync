@@ -28,7 +28,8 @@ def eval(gt_path, result_path, k):
             #calculate recall
             recall += len(set(gt_list).intersection(set(result_list[:k])))/k
             #calculate mrr
-            for i in range(k):
+            _k = k if k < len(result_list) else len(result_list)
+            for i in range(_k):
                 if result_list[i] in gt_list:
                     mrr += 1.0/(i+1)
                     break

@@ -2,6 +2,7 @@ import struct
 import csv
 import argparse
 
+suffix = ["841K", "1.77M", "2.65M", "3.54M", "4.42M", "5.31M", "6.19M", "7.07M", "7.96M", "8.84M"]
 
 def transform(query_path, bin_path, tsv_path):
     with open(query_path, "r", encoding="utf8") as f_query, \
@@ -24,11 +25,10 @@ if __name__ == "__main__":
     parser = argparse.ArgumentParser()
     parser.add_argument('--query-path', type=str, default="/data/data5/v-yaoqichen/data/queries.dev.small.tsv",
                         help='path to filter data of passages')
-    parser.add_argument('--bin-result-path', type=str, default="./results/result-8k",
-                        help='path to binary search result which need to be transfered')
-    parser.add_argument('--tsv-result-path', type=str, default="./results/result-8k.tsv",
-                        help='path to tsv search result')
+    parser.add_argument('--bin-result-path-prefix', type=str, default="./results/result-",
+                        help='prefix of path to binary search result which need to be transfered')
 
     args = parser.parse_args()
 
-    transform(args.query_path, args.bin_result_path, args.tsv_result_path)
+    for i in range(10):
+        transform(args.query_path, args.bin_result_path_prefix + "%s.bin" % suffix[i], args.bin_result_path_prefix + "%s.tsv" % suffix[i])

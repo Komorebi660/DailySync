@@ -16,9 +16,10 @@
   - [Evaluation](#evaluation)
   - [Filter Search](#filter-search)
   - [Update Performance](#update-performance)
-    - [preparation](#preparation)
-    - [Run SPFresh](#run-spfresh)
-    - [Run with rebuild method](#run-with-rebuild-method)
+    - [pack vectors](#pack-vectors)
+    - [run](#run)
+    - [*NO-USED: SPFresh*](#no-used-spfresh)
+      - [适用于SPFresh的`ini`文件示例](#适用于spfresh的ini文件示例)
 
 ## Get Data
 
@@ -145,6 +146,8 @@ response = requests.request("PUT or POST", url, headers=headers, data=json.dumps
 assert response.ok
 ```
 
+**注意: 这里在创建docker的时候将默认的`9200`端口转发至`9400`端口, 若不做转发操作, 代码中的url需修改为`9200`.**
+
 ### demo
 
 demo代码见[此](./Elasticsearch/demo.py), 该代码构建了一个包含`text`和`embedding`的index, 且插入了两条数据, 模拟了三类搜索.
@@ -229,21 +232,21 @@ nohup python3 -u build-index.py \
 代码见[此](./Elasticsearch/search.py)
 
 ```bash
-python3 -u search-queries.py \
+python3 -u search.py \
 --search-method "inverted-index" \
 --inverted-index-key "doc" \
 --path-query "../data/queries.dev.small.tsv" \
 --path-search-result "./inverted-index-es.tsv" \
 --path-latency-result "./latency-inverted-index-es.tsv"
 
-python3 -u search-queries.py \
+python3 -u search.py \
 --search-method "knn" \
 --knn-key "embedding" \
 --path-query-embedding "../embedding_data/query/query_dev_small.pt" \
 --path-search-result "./knn-es.tsv" \
 --path-latency-result "./latency-knn-es.tsv"
 
-python3 -u search-queries.py \
+python3 -u search.py \
 --search-method "combine" \
 --inverted-index-key "doc" \
 --path-query "../data/queries.dev.small.tsv" \
@@ -251,7 +254,7 @@ python3 -u search-queries.py \
 --path-query-embedding "../embedding_data/query/query_dev_small.pt" \
 --path-search-result "./inverted-index-knn-es.tsv" \
 --path-latency-result "./latency-inverted-index-knn-es.tsv" \
---knn-weight 800
+--knn-weight 8000
 ```
 
 ### utils
@@ -305,13 +308,15 @@ export BOOST_LIBRARYDIR=prefix/lib:$BOOST_LIBRARYDIR
 Clone `sptag` and install:
 
 ```bash
-git clone --recursive https://github.com/microsoft/SPTAG.git
+git config --global filter.lfs.smudge "git-lfs smudge --skip -- %f"
+git config --global filter.lfs.process "git-lfs filter-process --skip"
+git clone --recurse-submodules https://github.com/microsoft/SPTAG
 
 cd SPTAG
 mkdir build
 cd build
 cmake ..
-make -j8
+make -j 16
 ```
 
 关于SPANN的使用，可以参考[这里](https://github.com/microsoft/SPTAG/blob/main/docs/Tutorial.ipynb)。接下来和SPANN有关的代码都最好放在`Release`文件夹下运行。
@@ -353,8 +358,7 @@ python3 -u build-index.py --passage-path-prefix "../embedding_data/corpus/split0
 python3 -u search.py \
   --query-path "../data/queries.dev.small.tsv" \
   --search-result-path "./spann_qrels.tsv" \
-  --latency-result-path "./spann_latency.tsv" \
-  2>&1 > search.log &
+  --latency-result-path "./spann_latency.tsv"
 ```
 
 `SPANN`+`Inverted Index`搜索代码在[这里](./SPANN/hybrid-search.py), 基本思想是`SPANN`和`Elasticsearch`各搜索200个结果, 然后合并。使用下面的命令运行脚本。
@@ -365,8 +369,7 @@ python3 -u hybrid-search.py \
   --query-embedding-path "../../embedding_data/query/query_dev_small.pt" \
   --search-result-path "./inverted_index_spann_qrels.tsv" \
   --latency-result-path "./inverted_index_spann_latency.tsv" \
-  --knn_weight 10.0 \
-  2>&1 > hybrid-search.log &
+  --knn_weight 10.0
 ```
 
 ## Evaluation
@@ -446,7 +449,77 @@ python3 eval.py \
 
 ## Update Performance
 
-### preparation
+### pack vectors
+
+将数据拆分为**10份**, 第 $i$ 份包含`split0[0~i-1].pt`. 然后将数据转化为`binary`格式, 代码在[这里](./UpdatePerf/pack_vectors.py), 可以使用以下命令执行:
+
+```bash
+python3 pack_vectors.py \
+  --passage-path-prefix "../embedding_data/corpus/split0" \
+  --query-path "../embedding_data/query/query_dev_small.pt" \
+  --corpus-bin-path-prefix "doc_vectors_" \
+  --query-bin-path "query_vectors.bin"
+```
+
+### run
+
+编写`ini`文件, 样例见[此](./UpdatePerf/msmarco.ini), 有几个参数值得注意:
+
+- `VectorPath`: 用于构建索引的向量路径
+- `IndexDirectory`: 索引的保存路径
+- `SearchResult`: 保存结果的路径
+
+另外, `ini`文件中的`SelectHead`和`BuildHead`部分是用于构建memory的SPTAG索引, `BuildSSDIndex`部分是用于构建SSD索引。因此，在最开始我们可以将`SelectHead`和`BuildHead`部分的`isExecute`参数置为`true`, 构建基础索引, 在之后的实验中我们可以将`isExecute`置为`false`, 来模拟centroids保持不变的情况下插入新数据。我们为10次搜索分别编写`ini`文件，按照:
+
+```
+"841K", "1.77M", "2.65M", "3.54M", "4.42M", "5.31M", "6.19M", "7.07M", "7.96M", "8.84M"
+```
+
+的顺序指定相应的`VectorPath`和`SearchResult`, **`841K`对应的`SelectHead`和`BuildHead`部分的`isExecute`参数置为true, 其余的文件这两个参数置为false**. 我们将采用`Release`文件夹中的可执行文件`ssdserving`来完成下面的实验, 使用以下命令构建索引并搜索:
+
+```bash
+echo "start 841K ..."
+path-to-ssdserving path-to-841K.ini
+
+echo "start 1.77M ..."
+path-to-ssdserving path-to-1.77M.ini
+
+echo "start 2.65M ..."
+path-to-ssdserving path-to-2.65M.ini
+
+echo "start 3.54M ..."
+path-to-ssdserving path-to-3.54M.ini
+
+echo "start 4.42M ..."
+path-to-ssdserving path-to-4.42M.ini
+
+echo "start 5.31M ..."
+path-to-ssdserving path-to-5.31M.ini
+
+echo "start 6.19M ..."
+path-to-ssdserving path-to-6.19M.ini
+
+echo "start 7.07M ..."
+path-to-ssdserving path-to-7.07M.ini
+
+echo "start 7.96M ..."
+path-to-ssdserving path-to-7.96M.ini
+
+echo "start 8.84M ..."
+path-to-ssdserving path-to-8.84M.ini
+```
+
+搜索结果是以二进制保存的, 因此需要进行转换, 转换脚本见[此](./UpdatePerf/bin2tsv.py), 可以使用以下命令执行:
+
+```bash
+python3 bin2tsv.py \
+  --query-path "/data/data5/v-yaoqichen/data/queries.dev.small.tsv" \
+  --bin-result-path-prefix "./results/result-"
+```
+
+为了生成ground truth(每次插入新数据都rebuild), 只需要修改上面的`ini`文件, 将所有文件的`SelectHead`和`BuildHead`部分的`isExecute`参数置为true, 然后再次执行上面的命令即可。
+
+### *NO-USED: SPFresh*
 
 首先安装`liburing`:
 
@@ -488,7 +561,7 @@ export RocksDB_DIR=xxx:$RocksDB_DIR
 sudo apt-get install libtbb-dev
 ```
 
-最后安装SPFresh:
+修改`SPFresh/Test/src/SPFreshTest.cpp`中最后面`ini`文件的path为实际存放路径(`ini`文件样式见后面), 然后编译安装SPFresh:
 
 ```bash
 git clone --recursive https://github.com/Yuming-Xu/SPFresh.git
@@ -499,118 +572,101 @@ cmake -DCMAKE_BUILD_TYPE=Release .. # 注意观察各项环境的输出是否正
 make -j 16
 ```
 
-### Run SPFresh
-
-将数据拆分, `base`数据为前 $841,823$ 条, 剩余 $8,000,000$ 条数据将被拆分为**10份**依次插入。运行SPFresh我们首先需要将embeddings转化为`binary`格式, 代码在[这里](./UpdatePerf/pack_vectors.py), 可以使用以下命令执行:
-
-```bash
-python3 pack_vectors.py \
-  --passage-path-prefix "../embedding_data/corpus/split0" \
-  --query-path "../embedding_data/query/query_dev_small.pt" \
-  --query-bin-path "query_vectors.bin" \
-  --corpus-bin-path "doc_vectors.bin" \
-  --corpus-base-bin-path "doc_vectors_base.bin"
-```
-
-修改`SPFresh/Test/src/SPFreshTest.cpp`最后`ini`文件的位置, 调整[`ini`文件](./UpdatePerf/msmarco.ini)中路径的位置, 然后运行`Release`目录下的`SPFreshTest`:
+准备好数据后, 调整`ini`文件中各个路径的位置, 然后运行`Release`目录下的`SPFreshTest`:
 
 ```bash
 nohup ./SPTAGTest 2>&1 > msmarco.log &
 ```
 
-搜索结果会呈现在指定的文件夹中, 结果是以二进制保存的, 因此需要进行转换, 转换脚本见[此](./UpdatePerf/bin2tsv.py), 可以使用以下命令执行:
+搜索结果会呈现在`ini`文件指定的文件夹(`SearchResult`)中。
 
-```bash
-python3 bin2tsv.py \
-  --query-path "/data/data5/v-yaoqichen/data/queries.dev.small.tsv" \
-  --bin-result-path "./results/result-841k" \
-  --tsv-result-path "./results/result-841k.tsv" \
-```
+#### 适用于SPFresh的`ini`文件示例
 
-### Run with rebuild method
+```ini
+[Base]
+ValueType=Float
+DistCalcMethod=L2
+IndexAlgoType=BKT
+Dim=769
+VectorPath=path-to-base-vector
+VectorType=DEFAULT
+QueryPath=path-to-query-vector
+QueryType=DEFAULT
+WarmupPath=
+WarmupType=DEFAULT
+TruthPath=
+TruthType=
+GenerateTruth=false
+IndexDirectory=path-to-index-storage
+HeadIndexFolder=headindex-folder-name
 
-每次新插入数据后便rebuild index, 再search query, 最后测`recall`.
+[SelectHead]
+isExecute=true
+TreeNumber=1
+BKTKmeansK=32
+BKTLeafSize=8
+SamplesNumber=10000
+NumberOfThreads=32
+SaveBKT=false
+SelectThreshold=50
+SplitFactor=6
+SplitThreshold=100
+Ratio=0.1
+BKTLambdaFactor=-1
+AnalyzeOnly=false
+CalcStd=true
+SelectDynamically=true
+NoOutput=false
+RecursiveCheckSmallCluster=true
+PrintSizeCount=true
 
-```bash
-cd SPTAG/Release
+[BuildHead]
+isExecute=true
+NeighborhoodSize=32
+TPTNumber=64
+TPTLeafSize=2000
+MaxCheck=8192
+MaxCheckForRefineGraph=8192
+RefineIterations=3
+NumberOfThreads=32
+BKTLambdaFactor=-1
 
-python3 -u build-index.py \
-  --passage-path-prefix "../embedding_data/corpus/split0" \
-  --n 841823
-python3 -u search.py \
-  --query-path "../embedding_data/query/query_dev_small.pt" \
-  --search-result-path "./results/qrels-841k.tsv" \
-rm -rf ./msmarco
+[BuildSSDIndex]
+isExecute=true
+BuildSsdIndex=true
+InternalResultNum=64
+ReplicaCount=8
+PostingPageLimit=96
+NumberOfThreads=32
+MaxCheck=8192
+TmpDir=path-to-store-some-must-files
+OutputEmptyReplicaID=1
+FullDeletedIDFile=path-to-store-some-must-files
+UseKV=true
+KVPath=path-to-store-some-must-files
+SsdInfoFile=path-to-store-some-must-files
 
-python3 -u build-index.py \
-  --passage-path-prefix "../embedding_data/corpus/split0" \
-  --n 1641823
-python3 -u search.py \
-  --query-path "../embedding_data/query/query_dev_small.pt" \
-  --search-result-path "./results/qrels-1641k.tsv" \
-rm -rf ./msmarco
-
-python3 -u build-index.py \
-  --passage-path-prefix "../embedding_data/corpus/split0" \
-  --n 2441823
-python3 -u search.py \
-  --query-path "../embedding_data/query/query_dev_small.pt" \
-  --search-result-path "./results/qrels-2441k.tsv" \
-rm -rf ./msmarco
-
-python3 -u build-index.py \
-  --passage-path-prefix "../embedding_data/corpus/split0" \
-  --n 3241823
-python3 -u search.py \
-  --query-path "../embedding_data/query/query_dev_small.pt" \
-  --search-result-path "./results/qrels-3241k.tsv" \
-rm -rf ./msmarco
-
-python3 -u build-index.py \
-  --passage-path-prefix "../embedding_data/corpus/split0" \
-  --n 4841823
-python3 -u search.py \
-  --query-path "../embedding_data/query/query_dev_small.pt" \
-  --search-result-path "./results/qrels-4841k.tsv" \
-rm -rf ./msmarco
-
-python3 -u build-index.py \
-  --passage-path-prefix "../embedding_data/corpus/split0" \
-  --n 5641823
-python3 -u search.py \
-  --query-path "../embedding_data/query/query_dev_small.pt" \
-  --search-result-path "./results/qrels-5641k.tsv" \
-rm -rf ./msmarco
-
-python3 -u build-index.py \
-  --passage-path-prefix "../embedding_data/corpus/split0" \
-  --n 6441823
-python3 -u search.py \
-  --query-path "../embedding_data/query/query_dev_small.pt" \
-  --search-result-path "./results/qrels-6441k.tsv" \
-rm -rf ./msmarco
-
-python3 -u build-index.py \
-  --passage-path-prefix "../embedding_data/corpus/split0" \
-  --n 7241823
-python3 -u search.py \
-  --query-path "../embedding_data/query/query_dev_small.pt" \
-  --search-result-path "./results/qrels-7241k.tsv" \
-rm -rf ./msmarco
-
-python3 -u build-index.py \
-  --passage-path-prefix "../embedding_data/corpus/split0" \
-  --n 8041823
-python3 -u search.py \
-  --query-path "../embedding_data/query/query_dev_small.pt" \
-  --search-result-path "./results/qrels-8041k.tsv" \
-rm -rf ./msmarco
-
-python3 -u build-index.py \
-  --passage-path-prefix "../embedding_data/corpus/split0" \
-  --n 8841823
-python3 -u search.py \
-  --query-path "../embedding_data/query/query_dev_small.pt" \
-  --search-result-path "./results/qrels-8841k.tsv" \
-rm -rf ./msmarco
+[SearchSSDIndex]
+isExecute=true
+InternalResultNum=64
+SearchThreadNum=1
+HashTableExponent=4
+ResultNum=10
+MaxCheck=8192
+MaxDistRatio=1000.0
+SearchPostingPageLimit=96
+SearchInternalResultNum=64
+SearchTimes=1
+Update=true
+Step=number-of-vectors-for-each-step-to-update
+InsertThreadNum=1
+AppendThreadNum=1
+ReassignThreadNum=1
+PersistentBufferPath=path-to-store-some-must-files
+SearchResult=path-to-store-search-result
+FullVectorPath=path-to-full-vectors
+DisableReassign=false
+CalTruth=true
+SearchDuringUpdate=false
+InPlace=true
 ```

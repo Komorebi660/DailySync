@@ -17,6 +17,8 @@ user = 'elastic'
 password = ''
 cert = 'http_ca.crt'
 
+s = requests.session()
+s.keep_alive = False  # avoid too many connections
 
 def search_with_inverted_index(query):
     """return a tuple(docid, rank, score)
@@ -33,7 +35,7 @@ def search_with_inverted_index(query):
             },
         },
     }
-    response = requests.request("GET", url, headers=headers, data=json.dumps(payload), verify=cert, auth=(user, password))
+    response = s.request("GET", url, headers=headers, data=json.dumps(payload), verify=cert, auth=(user, password))
     res = json.loads(response.text)
 
     #record["_source"]["embedding"]
