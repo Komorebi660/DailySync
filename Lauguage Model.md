@@ -164,7 +164,7 @@ Transformer也是一种Encoder-Decoder模型, 论文中提到的模型包含6层
 
 Transformer的大致工作流程如下:
 
-- 获取输入文本的embedding, 包含**词向量**(可以通过Word2Vec等方式得到，也可以在Transformer中得到)和**位置向量**(因为Transformer不采用RNN的结构，而是使用全局信息，这样就不能利用单词的顺序信息，位置向量可以通过训练得到也可以用公式计算得到)。
+- 获取输入文本的embedding, 包含**词向量**(可以通过Word2Vec等方式得到，也可以在Transformer中得到)和**位置向量**(因为Transformer不采用RNN的结构，而是使用全局信息，这样就不能利用单词的顺序信息，使用位置向量可以解决这一问题。位置向量可以通过训练得到也可以用公式计算得到)。
 - 将所有embedding拼接为一个矩阵 $X$ 作为Encoder的输入, 通过6层Encoder得到与输入大小相同的词编码矩阵 $C$ 。
 - 把 $C$ 传入到Decoder中, 同时最下层Decoder还会接收已经预测出的所有结果作为输入(具体实现为mask)。Decoder的最后输出再经过一个全连接层以及softmax得到反映词概率的向量。
 
