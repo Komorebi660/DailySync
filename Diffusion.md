@@ -182,7 +182,7 @@ loss.backward()
 
 $$p_\theta(x_{t-1}|x_t) = \mathcal{N}(x_{t-1}; \mu_\theta(x_t, t), \sigma_\theta^2(x_t, t)\mathbf{I}) \sim \frac{1}{\sqrt{\alpha_t}}(x_t - \frac{\beta_t}{\sqrt{1-\overline{\alpha_t}}}\epsilon_\theta(x_t, t)) + \sigma_\theta(x_t, t)z \qquad (z \sim \mathcal{N}(0, \mathbf{I}))$$
 
-我们可以近似 $\beta_t \approx \sigma_\theta^2(x_t, t)$ , 因此, 我们就可以利用上面的公式从 $t=T$ 开始逐步去噪获得图像 $x_0$ . 算法伪代码如下:
+从 $t=T$ 开始逐步去噪，直至生成图像 $x_0$ . 在实际应用中，我们可以近似 $\beta_t \approx \sigma_\theta^2(x_t, t)$ ，算法伪代码如下:
 
 ```python
 x_T = torch,randn_like(x0.shape)
