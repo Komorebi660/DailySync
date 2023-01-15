@@ -138,6 +138,13 @@ b = set([2, 3, 4])
 
 # 求交集(计算recall)
 a.intersection(b) # {2, 3}
+
+# 求并集
+a.union(b) # {1, 2, 3, 4}
+
+# 求差集
+a.difference(b) # {1}
+b.difference(a) # {4}
 ```
 
 ### list
