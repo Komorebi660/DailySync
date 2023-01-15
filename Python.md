@@ -2,6 +2,7 @@
 
 - [Usage of Python](#usage-of-python)
   - [data load \& store](#data-load--store)
+    - [`.txt`](#txt)
     - [`.tsv`](#tsv)
     - [`.pt`](#pt)
     - [`.bin`](#bin)
@@ -14,6 +15,25 @@
   - [Faker](#faker)
 
 ## data load & store
+
+### `.txt`
+
+```python
+with open("xxx.txt", "w", encoding="utf8") as f:
+    f.write("xxx\n123\n")
+
+with open("xxx.txt", "r", encoding="utf8") as f:
+    f.read() # xxx\n123\n
+
+with open("xxx.txt", "r", encoding="utf8") as f:
+    f.read(1) # x
+
+with open("xxx.txt", "r", encoding="utf8") as f:
+    f.readline() # xxx
+
+with open("xxx.txt", "r", encoding="utf8") as f:
+    f.readlines() # ['xxx\n', '123\n']
+```
 
 ### `.tsv`
 
@@ -103,6 +123,11 @@ for key in list(d.keys()):
 # traverse
 for key in d.keys():
     print(key, d[key])
+
+# str to dict
+import json
+str1 = "{'a': 1, 'b': 2}"
+json.loads(str1)
 ```
 
 ### set
@@ -183,11 +208,12 @@ plt.xticks(np.arange(11), ['一', '二', '三', '四', '五', '六', '七', '八
 plt.yticks(fontsize=10, color='gray')
 
 #画曲线
-plt.plot(x, y, color='red', linewidth=1.0, linestyle='--', label='label1')
+plt.plot(x, y, color='red', linewidth=1.0, linestyle='--', marker='.', label='label1')
 """
 color: 颜色
 linewidth: 线宽
 linestyle: 线型
+marker: 标记样式
 label: 图例
 """
 
