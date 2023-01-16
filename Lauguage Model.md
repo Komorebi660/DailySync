@@ -5,6 +5,8 @@
     - [Autoregressive Language Model](#autoregressive-language-model)
     - [Autoencoding Language Model](#autoencoding-language-model)
   - [BLEU](#bleu)
+  - [TF-IDF](#tf-idf)
+  - [BM25](#bm25)
   - [RNN](#rnn)
   - [Seq2Seq](#seq2seq)
   - [Attention](#attention)
@@ -52,6 +54,25 @@ paper中的 $\mathbf{BLEU}$ 一般取为:
 $$\mathbf{BLEU} = \exp \left(\sum_{n=1}^4 score_n \right)$$
 
 最大时四个 $score$ 均为 $1$ , $\mathbf{BLEU}_{max} = e^4 \approx 54.598$ .
+
+## TF-IDF
+
+它是一种判别一个词在文章中的**重要程度**的指标，其计算方式如下:
+
+- 计算词频 $tf$ , 即一个词在文章中出现的次数；
+- 考虑到文章有长有短，将词频标准化 $tf = \frac{tf}{文章总词数}$ ；
+- 计算逆文档频率 $idf = \log \frac{语料库的文章总数}{语料库中包含该词的文章数 + 1}$ , 如果一个词越常见, 那么说明它越不重要, 此时 $idf$ 值越小；
+- `tf-idf` $= tf \times idf$ .
+
+## BM25
+
+它是一种用来评价**搜索词和文档之间相关性**的算法，基于概率检索模型提出。给定查询 $q$ (查询中第 $i$ 个词为 $q_i$ ) 和文档 $d$ (语料库中总共有 $N$ 篇文章, $d$ 是其中任意一篇)，其计算方式如下:
+
+- 计算单词权重也即 $idf$ , 不过这里的计算公式和`tf-idf`中的略有不同, 在这里, $idf(q_i) = \log \frac{N-df_i+0.5}{df_i+0.5}$ , 其中 $df_i$ 为语料库中包含单词 $q_i$ 的文章数；
+- 计算单词与文档的相关性。`BM25`的设计依据一个重要的发现：词频和相关性之间的关系是**非线性**的，也就是说，每个词对于文档的相关性分数不会超过一个特定的阈值，当词出现的次数达到一个阈值后，其影响就不在线性增加了，而这个阈值会跟文档本身有关。因此，在刻画单词与文档相似性时，`BM25`是这样设计的： $S(q_i, d) = \frac{(k_1+1)tf_{id}}{k_1(1-b+b*\frac{L_d}{L_{avg}}) + tf_{id}}$ 其中, $tf_{id}$ 是单词 $q_i$ 在文章 $d$ 中出现的次数(标准化后), $L_d$ 是文章 $d$ 的长度, $L_{avg}$ 是语料库中所有文章的平均长度, $k_1$ 和 $b$ 是两个超参数, 分别用于标准化文章词频的范围以及调节使用文档长度来表示信息量的权重，实际应用中一般取 $k_1=1.2 \sim 2, b=0.75$ ；
+- 计算单词与查询的相关性。 $R(q_i, q) = \frac{(k_3+1)tf_{iq}}{k_3+tf_{iq}}$ 其中，$tf_{iq}$ 是单词 $q_i$ 在查询 $q$ 中出现的次数(标准化后)，$k_3$ 是一个超参数，用于标准化查询中词频的范围，实际应用中一般取 $k_3=1.2 \sim 2$ .
+- $BM25(q_i, q, d)=idf(q_i) \times S(q_i, d) \times R(q_i, q)$
+
 
 ## RNN
 
