@@ -38,3 +38,5 @@
 | `\nabla` | $\nabla$ |
 | `dag` | $\dag$ |
 | `ddag` | $\ddag$ |
+| `\gg` | $\gg$ |
+| `\ll` | $\ll$ |
