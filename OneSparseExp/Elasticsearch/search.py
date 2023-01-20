@@ -23,7 +23,7 @@ def search_with_inverted_index_and_knn(inverted_index_key, knn_key, knn_weight, 
         'Content-Type': 'application/json'
     }
     payload = {
-        "size": 100,
+        "size": 200,
         "query": {
             "match": {
                 inverted_index_key: {
@@ -154,7 +154,7 @@ def search_queries_with_inverted_index_and_knn(
             query_embedding = query_embeddings[idx].tolist()
             result, latency = search_with_inverted_index_and_knn(inverted_index_key, knn_key, knn_weight, query, query_embedding)
             # save search result in TREC format `qid 0 pid rank score IndriQueryLikelihood & format `qid latency`.
-            for (docid, rank, score) in result:
+            for (docid, rank, score) in result[:100]:
                 out.write(f"{qid} 0 {docid} {rank} {score} IndriQueryLikelihood\n")
             out_latency.write(f"{qid}\t{latency}\n")
 

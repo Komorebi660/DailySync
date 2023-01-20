@@ -45,8 +45,8 @@ def search_with_inverted_index(query):
 def search_with_spann(embedding):
     """return a tuple(docid, rank, score)
     """
-    result = index.Search(embedding, 200)
-    return [(result[0][i], i+1, 100.0-result[1][i]) for i in range(200)]
+    result = index.Search(embedding, 100)
+    return [(result[0][i], i+1, 1.0/(1.0+float(result[1][i]))) for i in range(200)]
 
 
 def merge(query_path, query_embedding_path, out_path, out_latency_path, knn_weight):
@@ -65,11 +65,11 @@ def merge(query_path, query_embedding_path, out_path, out_latency_path, knn_weig
             #store candidates
             candidates = {}  # docid: [spann_score, ivf_score, merged_score]
 
-            #search with spann and return 200 results
+            #search with spann and return 100 results
             result1 = search_with_spann(query_embedding)
             for (docid, rank, score) in result1:
                 #top200 add to candidates
-                candidates[int(docid)] = [score, 0.0, knn_weight * score]  # use spann_score as ivf_score
+                candidates[int(docid)] = [score, 0.0, knn_weight * score]
 
             #search with inverted index and return 200 results
             result2 = search_with_inverted_index(query)
@@ -106,7 +106,7 @@ if __name__ == "__main__":
                         help='path to save search result')
     parser.add_argument('--latency-result-path', type=str, default="./inverted_index_spann_latency.tsv",
                         help='path to save latency result')
-    parser.add_argument('--knn-weight', type=float, default=10.0,
+    parser.add_argument('--knn-weight', type=float, default=15000.0,
                         help='weight of knn score')
 
     args = parser.parse_args()
