@@ -150,8 +150,14 @@ b.difference(a) # {4}
 ### list
 
 ```python
+# transform
 a = ['1', '2', '3']
 b = list(map(int, a)) # [1, 2, 3]
+
+# sort
+a = [[1, 3], [2, 2], [3, 1]]
+a.sort(key=lambda x: x[1])               # [[3, 1], [2, 2], [1, 3]]
+a.sort(key=lambda x: x[1], reverse=True) # [[1, 3], [2, 2], [3, 1]]
 ```
 
 ## numpy
