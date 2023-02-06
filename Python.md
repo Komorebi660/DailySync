@@ -6,6 +6,7 @@
     - [`.tsv`](#tsv)
     - [`.pt`](#pt)
     - [`.bin`](#bin)
+  - [yeild](#yeild)
   - [Basic Data Structure](#basic-data-structure)
     - [dict](#dict)
     - [set](#set)
@@ -102,6 +103,53 @@ with open("xxx.bin", 'rb') as f:
     _list = struct.unpack("%sf" % i, f.read(4 * i))[0]
 ```
 
+## yeild
+
+返回一个`generator`, 可以用于节省内存。
+
+```python
+def fab(max): 
+    n, a, b = 0, 0, 1 
+    while n < max: 
+        yield b 
+        a, b = b, a + b 
+        n = n + 1
+ 
+for n in fab(5): 
+    print n
+```
+
+在`for`循环执行时, 每次循环都会执行`fab`函数内部的代码, 执行到`yield b`时, `fab`函数就返回一个迭代值, 下次迭代时, 代码从`yield b`的下一条语句继续执行。也可以手动调用`next()`方法来获取下一个元素:
+
+```python
+f = fab(5)
+f.next() # 1
+f.next() # 1
+f.next() # 2
+f.next() # 3
+f.next() # 5
+```
+
+`yield from`可用于调用另一个`generator`:
+
+```python
+s = 'ABC'
+t = tuple(range(3))
+
+def f1(*iterables):
+    for it in iterables:
+        for i in it:
+            yield i
+
+def f2(*iterables):
+    for it in iterables:
+        yield from it
+
+#f1与f2等价
+list(f1(s, t)) # ['A', 'B', 'C', 0, 1, 2]
+list(f2(s, t)) # ['A', 'B', 'C', 0, 1, 2]
+```
+
 ## Basic Data Structure
 
 ### dict
@@ -178,6 +226,7 @@ a = np.array([1, 3, 3, 4, 5])
 index = np.where(a == 3)[0]     # [1, 2]
 b = a[index]                    # [3, 3]
 
+
 # L2 norm
 x = np.array([[1, 2, 3], [4, 5, 6], [7, 8, 9]])
 #按行计算
@@ -185,11 +234,18 @@ np.linalg.norm(x, axis=1)       # [3.74165739, 8.77496439, 13.92838828]
 #按列计算
 np.linalg.norm(x, axis=0)       # [9.53939201, 11.22497216, 12.12435565]
 
+# 按行累乘
+np.cumprod(x, axis=1)           # [[1, 2, 6], [4, 20, 120], [7, 56, 504]]
+# 按列累乘
+np.cumprod(x, axis=0)           # [[1, 2, 3], [4, 10, 18], [28, 80, 162]]
+
+
 # arg sort
 a = np.array([4, 2, 1, 5, 3])
 np.argsort(a)           
 # [2 1 4 0 3]
 # first element is "1" which is in a[2]
+
 
 # delete column/row
 a = np.array([[1, 2, 3], [4, 5, 6], [7, 8, 9]])
