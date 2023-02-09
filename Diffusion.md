@@ -108,21 +108,21 @@ $$q(x_t|x_0) \propto \exp{\left(-\frac{(x_t-\sqrt{\overline{\alpha_t}}x_0)^2}{2(
 
 整理可以得到:
 
-$$q(x_{t-1}|x_t, x_0) = \mathcal{N}(x_{t-1};\tilde{\mu_t}(x_t), \tilde{\beta_t}\mathbf{I})$$
+$$q(x_{t-1}|x_t, x_0) = \mathcal{N}(x_{t-1};\tilde{\mu}_{t-1}(x_t), \tilde{\beta}_{t-1}\mathbf{I})$$
 
 其中:
 
-$$\tilde{\mu_t}(x_t) = \frac{\sqrt{\alpha_t}(1-\overline{\alpha_{t-1}})}{1-\overline{\alpha_t}}x_t + \frac{\sqrt{\overline{\alpha_{t-1}}}\beta_t}{1-\overline{\alpha_t}}x_0 = \frac{1}{\sqrt{\alpha_t}}(x_t - \frac{\beta_t}{\sqrt{1-\overline{\alpha_t}}}\overline{\epsilon_t})$$
+$$\tilde{\mu}_{t-1}(x_t) = \frac{\sqrt{\alpha_t}(1-\overline{\alpha_{t-1}})}{1-\overline{\alpha_t}}x_t + \frac{\sqrt{\overline{\alpha_{t-1}}}\beta_t}{1-\overline{\alpha_t}}x_0 = \frac{1}{\sqrt{\alpha_t}}(x_t - \frac{\beta_t}{\sqrt{1-\overline{\alpha_t}}}\overline{\epsilon_t})$$
 
-$$\tilde{\beta_t} = \frac{1-\overline{\alpha_{t-1}}}{1-\overline{\alpha_t}}\beta_t \approx \beta_t$$
+$$\tilde{\beta}_{t-1} = \frac{1-\overline{\alpha_{t-1}}}{1-\overline{\alpha_t}}\beta_t \approx \beta_t$$
 
-以上推导的 $\tilde{\mu_t}(x_t)$ 可视为`ground truth`，而我们将通过神经网络学习到 $\mu_\theta(x_t, t)$ , 本质上也就是学习噪声 $\epsilon_\theta(x_t, t)$:
+以上推导的 $\tilde{\mu_t}(x)_{t-1}$ 可视为`ground truth`，而我们将通过神经网络学习到 $\mu_\theta(x_t, t)$ , 本质上也就是学习噪声 $\epsilon_\theta(x_t, t)$:
 
 $$\mu_\theta(x_t, t) = \frac{1}{\sqrt{\alpha_t}}(x_t - \frac{\beta_t}{\sqrt{1-\overline{\alpha_t}}}\epsilon_\theta(x_t, t))$$
 
 因此模型预测的 $x_{t-1}$ 可以写成:
 
-$$x_{t-1}(x_{t}, t; \theta) = \frac{1}{\sqrt{\alpha_t}}(x_t - \frac{\beta_t}{\sqrt{1-\overline{\alpha_t}}}\epsilon_\theta(x_t, t)) + \sigma_\theta(x_t, t)z \qquad z \sim \mathcal{N}(0, \mathbf{I}))$$
+$$x_{t-1}(x_{t}, t; \theta) = \frac{1}{\sqrt{\alpha_t}}(x_t - \frac{\beta_t}{\sqrt{1-\overline{\alpha_t}}}\epsilon_\theta(x_t, t)) + \sigma_\theta(x_t, t)z \qquad z \sim \mathcal{N}(0, \mathbf{I})$$
 
 ### Train
 
