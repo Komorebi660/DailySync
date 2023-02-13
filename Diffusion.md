@@ -116,7 +116,7 @@ $$\tilde{\mu}_{t-1}(x_t) = \frac{\sqrt{\alpha_t}(1-\overline{\alpha_{t-1}})}{1-\
 
 $$\tilde{\beta}_{t-1} = \frac{1-\overline{\alpha_{t-1}}}{1-\overline{\alpha_t}}\beta_t \approx \beta_t$$
 
-以上推导的 $\tilde{\mu}_{t-1}(x)$ 可视为`ground truth`, 而我们将通过神经网络学习到 $\mu_\theta(x_t, t)$ , 本质上也就是学习噪声 $\epsilon_\theta(x_t, t)$:
+以上推导的 $\tilde\mu_{t-1}(x_t)$ 可视为`ground truth`, 而我们将通过神经网络学习到 $\mu_\theta(x_t, t)$ , 本质上也就是学习噪声 $\epsilon_\theta(x_t, t)$:
 
 $$\mu_\theta(x_t, t) = \frac{1}{\sqrt{\alpha_t}}(x_t - \frac{\beta_t}{\sqrt{1-\overline{\alpha_t}}}\epsilon_\theta(x_t, t))$$
 
