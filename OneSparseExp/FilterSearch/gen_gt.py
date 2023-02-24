@@ -31,8 +31,8 @@ def gen(passage_path, passage_filter_path, query_path, query_filter_path, result
     corpus = load_passages(passage_path)
     location = load_passage_filter(passage_filter_path)
     with open(query_path, 'rb') as f_embedding, \
-            open(query_filter_path, "r", encoding="utf8") as f_filter, \
-            open(result_path, "w", encoding="utf8") as f_result:
+         open(query_filter_path, "r", encoding="utf8") as f_filter, \
+         open(result_path, "w", encoding="utf8") as f_result:
         tsvreader_query = csv.reader(f_filter, delimiter="\t")
         query_embeddings, _ = pickle.load(f_embedding)
         idx = 0
@@ -47,8 +47,7 @@ def gen(passage_path, passage_filter_path, query_path, query_filter_path, result
             # sort
             sorted_index = np.argsort(score_list)
             for i in range(100):
-                # docid start from 0
-                f_result.write(f"{qid}\t{index[sorted_index[i]]}\t{i+1}\t{100.0-score_list[sorted_index[i]]}\n")
+                f_result.write(f"{qid}\t{index[sorted_index[i]]}\t{i+1}\t{1.0/(1.0+float(score_list[sorted_index[i]]))}\n")
             idx += 1
             if idx % 100 == 0:
                 f_result.flush()

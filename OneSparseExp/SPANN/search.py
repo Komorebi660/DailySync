@@ -1,20 +1,15 @@
-import sys
 import pickle
 import time
 import numpy as np
 import argparse
-
-sys.path.append('/SPTAG/Release/')
 import SPTAG
 
 def search(query_path, result_path, latency_path):
     index = SPTAG.AnnIndex.Load('msmarco')
 
     with open(query_path, 'rb') as f, \
-            open(result_path, 'w', encoding="utf8") as out:
-
-        if len(latency_path) != 0:
-            out_latency = open(latency_path, 'w', encoding="utf8")
+            open(result_path, 'w', encoding="utf8") as out, \
+            open(latency_path, 'w', encoding="utf8") as out_latency:
 
             embeddings, ids = pickle.load(f)
             for idx in range(len(ids)):
@@ -24,21 +19,18 @@ def search(query_path, result_path, latency_path):
                 result = index.Search(embedding, 100)
                 end = time.time()
                 latency = end - start
-                # save search result in TREC format `qid 0 pid rank score IndriQueryLikelihood & format `qid latency`.
-                #print(result)
+                
                 for i in range(100):
-                    out.write(f"{qid} 0 {result[0][i]} {i+1} {100-result[1][i]} IndriQueryLikelihood\n")
-                if len(latency_path) != 0:
-                    out_latency.write(f"{qid}\t{latency}\n")
+                    out.write(f"{qid}\t{result[0][i]}\t{i+1}\t{1.0/(1.0+float(result[1][i]))}\n")
+                out_latency.write(f"{qid}\t{latency}\n")
 
                 if idx % 100 == 0:
                     out.flush()
-                    if len(latency_path) != 0:
-                        out_latency.flush()
+                    out_latency.flush()
                     print(f"{idx} queries searched...")
 
-            if len(latency_path) != 0:
-                out_latency.close()
+            out.flush()
+            out_latency.flush()
             print(f"{len(ids)} queries searched.")
 
 
@@ -48,8 +40,8 @@ if __name__ == "__main__":
                         help='path to query embeddings')
     parser.add_argument('--search-result-path', type=str, default="./spann_qrels.tsv",
                         help='path to save search result')
-    parser.add_argument('--latency-result-path', type=str, default="",
-                        help='path to save latency result, set `None` to prevent output latency')
+    parser.add_argument('--latency-result-path', type=str, default="./spann_latency.tsv",
+                        help='path to save latency result')
 
     args = parser.parse_args()
 

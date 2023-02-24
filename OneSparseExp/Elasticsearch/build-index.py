@@ -41,13 +41,27 @@ def create_index(index_name):
                         "m": 16,
                         "ef_construction": 100
                     },
-                    "similarity": "dot_product"  # l2_norm, dot_product, cosine
+                    "similarity": "l2_norm"  # l2_norm, dot_product, cosine
                 },
                 "doc": {
                     "type": "text",
                 }
             }
         }
+    }
+    response = s.request("PUT", url, headers=headers, data=json.dumps(payload), verify=cert, auth=(user, password))
+    print(response.text)
+
+
+def setup(index_name):
+    url = f"https://localhost:9400/{index_name}/_settings"
+    headers = {
+        'Content-Type': 'application/json'
+    }
+    payload = {
+        "index": {
+            "max_result_window": "1000000"
+        },
     }
     response = s.request("PUT", url, headers=headers, data=json.dumps(payload), verify=cert, auth=(user, password))
     print(response.text)
@@ -142,5 +156,6 @@ if __name__ == "__main__":
 
     if args.create_index:
         create_index(args.index_name)
+        setup(args.index_name)
 
     save_document(args.path_doc, args.path_doc_embedding, args.index_name)

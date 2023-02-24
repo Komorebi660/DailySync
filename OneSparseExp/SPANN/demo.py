@@ -1,7 +1,4 @@
-import sys
 import numpy as np
-
-sys.path.append('./SPTAG/Release/')
 import SPTAG
 
 vnumber = 2000

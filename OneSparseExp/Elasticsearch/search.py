@@ -102,9 +102,8 @@ def search_queries_with_inverted_index(query_path, key, qrels_path, latency_path
         idx = 0
         for [qid, query] in tsvreader:
             result, latency = search_with_inverted_index(key, query)
-            # save search result in TREC format `qid 0 pid rank score IndriQueryLikelihood & format `qid latency`.
             for (docid, rank, score) in result:
-                out.write(f"{qid} 0 {docid} {rank} {score} IndriQueryLikelihood\n")
+                out.write(f"{qid}\t{docid}\t{rank}\t{score}\n")
             out_latency.write(f"{qid}\t{latency}\n")
 
             idx += 1
@@ -126,9 +125,8 @@ def search_queries_with_knn(query_embedding_path, key, qrels_path, latency_path,
             qid = int(ids[idx])
             embedding = embeddings[idx].tolist()
             result, latency = search_with_knn(key, embedding)
-            # save search result in TREC format `qid 0 pid rank score IndriQueryLikelihood & format `qid latency`.
             for (docid, rank, score) in result:
-                out.write(f"{qid} 0 {docid} {rank} {score} IndriQueryLikelihood\n")
+                out.write(f"{qid}\t{docid}\t{rank}\t{score}\n")
             out_latency.write(f"{qid}\t{latency}\n")
 
             if idx % print_frequency == 0:
@@ -153,9 +151,8 @@ def search_queries_with_inverted_index_and_knn(
         for [qid, query] in tsvreader_query:
             query_embedding = query_embeddings[idx].tolist()
             result, latency = search_with_inverted_index_and_knn(inverted_index_key, knn_key, knn_weight, query, query_embedding)
-            # save search result in TREC format `qid 0 pid rank score IndriQueryLikelihood & format `qid latency`.
-            for (docid, rank, score) in result[:100]:
-                out.write(f"{qid} 0 {docid} {rank} {score} IndriQueryLikelihood\n")
+            for (docid, rank, score) in result:
+                out.write(f"{qid}\t{docid}\t{rank}\t{score}\n")
             out_latency.write(f"{qid}\t{latency}\n")
 
             idx += 1
@@ -181,7 +178,7 @@ if __name__ == "__main__":
                         help='doc')
     parser.add_argument('--knn-key', type=str, default='embedding',
                         help='embedding')
-    parser.add_argument('--knn-weight', type=int, default=40,
+    parser.add_argument('--knn-weight', type=int, default=15000.0,
                         help='wight of knn in combine search')
     parser.add_argument('--path-search-result', type=str, default="./es-qrels.tsv",
                         help='path to save search result')

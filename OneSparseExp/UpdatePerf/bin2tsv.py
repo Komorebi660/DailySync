@@ -18,7 +18,7 @@ def transform(query_path, bin_path, tsv_path):
                 for rank in range(num_result):
                     pid = struct.unpack("i", f.read(4))[0]
                     score = struct.unpack("f", f.read(4))[0]
-                    f_result.write(f"{qid} 0 {pid} {rank+1} {100.0-score} IndriQueryLikelihood\n")
+                    f_result.write(f"{qid}\t{pid}\t{rank+1}\t{1.0/(1.0+float(score))}\n")
 
 
 if __name__ == "__main__":

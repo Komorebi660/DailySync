@@ -15,7 +15,7 @@
     - [search](#search-1)
   - [Evaluation](#evaluation)
   - [Filter Search](#filter-search)
-  - [Update Performance](#update-performance)
+  - [Streaming Update](#streaming-update)
     - [pack vectors](#pack-vectors)
     - [run](#run)
     - [*NO-USED: SPFresh*](#no-used-spfresh)
@@ -46,6 +46,32 @@ with open("xxx.tsv", "r", encoding="utf8") as f:
     reader = csv.reader(f, delimiter="\t")
     for row in reader:
         ...
+```
+
+利用一下的python代码将`qrels.dev.small.tsv`转化为`gt.tsv`备用:
+
+```python
+import csv
+
+results = {}
+
+with open("qrels.dev.small.tsv", "r", encoding="utf8") as f:
+    reader = csv.reader(f, delimiter="\t")
+    for [qid, _, pid, _] in reader:
+        if int(qid) not in results.keys():
+            results[int(qid)] = [int(pid)]
+        else:
+            results[int(qid)].append(int(pid))
+
+with open("queries.dev.small.tsv", "r", encoding="utf8") as f, \
+     open("test.tsv", "w", encoding="utf8") as f_rel:
+    reader = csv.reader(f, delimiter="\t")
+    for [qid, _] in reader:
+        if int(qid) not in results.keys():
+            print("Query not found: ", qid)
+        else:
+            for pid in results[int(qid)]:
+                f_rel.write(f"{qid}\t{pid}\n")
 ```
 
 接下来需要获取embedding数据, 可以用`scp`传输到服务器上。embedding数据包含两部分:
@@ -154,9 +180,9 @@ demo代码见[此](./Elasticsearch/demo.py), 该代码构建了一个包含`text
 
 ```bash
 # build index
-python3 test.py --create-index true --index-name my-index
+python test.py --create-index true --index-name my-index
 # search
-python3 test.py --create-index false --index-name my-index
+python test.py --create-index false --index-name my-index
 ```
 
 ### build index
@@ -165,62 +191,62 @@ python3 test.py --create-index false --index-name my-index
 
 ```bash
 #create index
-nohup python3 -u build-index.py \
+nohup python -u build-index.py \
 --create-index true \
 --index-name "ms-marco" \
 --path-doc-embedding "../embedding_data/corpus/split00.pt" \
 --path-doc "../data/collection.tsv" > 0.log 2>&1 &
 
 #insert data & build index
-nohup python3 -u build-index.py \
+nohup python -u build-index.py \
 --create-index false \
 --index-name "ms-marco" \
 --path-doc-embedding "../embedding_data/corpus/split01.pt" \
 --path-doc "../data/collection.tsv" > 1.log 2>&1 &
 
-nohup python3 -u build-index.py \
+nohup python -u build-index.py \
 --create-index false \
 --index-name "ms-marco" \
 --path-doc-embedding "../embedding_data/corpus/split02.pt" \
 --path-doc "../data/collection.tsv" > 2.log 2>&1 &
 
-nohup python3 -u build-index.py \
+nohup python -u build-index.py \
 --create-index false \
 --index-name "ms-marco" \
 --path-doc-embedding "../embedding_data/corpus/split03.pt" \
 --path-doc "../data/collection.tsv" > 3.log 2>&1 &
 
-nohup python3 -u build-index.py \
+nohup python -u build-index.py \
 --create-index false \
 --index-name "ms-marco" \
 --path-doc-embedding "../embedding_data/corpus/split04.pt" \
 --path-doc "../data/collection.tsv" > 4.log 2>&1 &
 
-nohup python3 -u build-index.py \
+nohup python -u build-index.py \
 --create-index false \
 --index-name "ms-marco" \
 --path-doc-embedding "../embedding_data/corpus/split05.pt" \
 --path-doc "../data/collection.tsv" > 5.log 2>&1 &
 
-nohup python3 -u build-index.py \
+nohup python -u build-index.py \
 --create-index false \
 --index-name "ms-marco" \
 --path-doc-embedding "../embedding_data/corpus/split06.pt" \
 --path-doc "../data/collection.tsv" > 6.log 2>&1 &
 
-nohup python3 -u build-index.py \
+nohup python -u build-index.py \
 --create-index false \
 --index-name "ms-marco" \
 --path-doc-embedding "../embedding_data/corpus/split07.pt" \
 --path-doc "../data/collection.tsv" > 7.log 2>&1 &
 
-nohup python3 -u build-index.py \
+nohup python -u build-index.py \
 --create-index false \
 --index-name "ms-marco" \
 --path-doc-embedding "../embedding_data/corpus/split08.pt" \
 --path-doc "../data/collection.tsv" > 8.log 2>&1 &
 
-nohup python3 -u build-index.py \
+nohup python -u build-index.py \
 --create-index false \
 --index-name "ms-marco" \
 --path-doc-embedding "../embedding_data/corpus/split09.pt" \
@@ -232,21 +258,21 @@ nohup python3 -u build-index.py \
 代码见[此](./Elasticsearch/search.py)
 
 ```bash
-python3 -u search.py \
+python -u search.py \
 --search-method "inverted-index" \
 --inverted-index-key "doc" \
 --path-query "../data/queries.dev.small.tsv" \
 --path-search-result "./inverted-index-es.tsv" \
 --path-latency-result "./latency-inverted-index-es.tsv"
 
-python3 -u search.py \
+python -u search.py \
 --search-method "knn" \
 --knn-key "embedding" \
 --path-query-embedding "../embedding_data/query/query_dev_small.pt" \
 --path-search-result "./knn-es.tsv" \
 --path-latency-result "./latency-knn-es.tsv"
 
-python3 -u search.py \
+python -u search.py \
 --search-method "combine" \
 --inverted-index-key "doc" \
 --path-query "../data/queries.dev.small.tsv" \
@@ -254,10 +280,10 @@ python3 -u search.py \
 --path-query-embedding "../embedding_data/query/query_dev_small.pt" \
 --path-search-result "./inverted-index-knn-es.tsv" \
 --path-latency-result "./latency-inverted-index-knn-es.tsv" \
---knn-weight 8000
+--knn-weight 15000.0
 ```
 
-[KNN + Inverted Index官方文档](https://www.elastic.co/guide/en/elasticsearch/reference/8.4/knn-search.html#approximate-knn)
+[KNN + Inverted Index Hybrid Search官方文档](https://www.elastic.co/guide/en/elasticsearch/reference/8.4/knn-search.html#approximate-knn)
 
 ### utils
 
@@ -307,7 +333,7 @@ export BOOST_INCLUDEDIR=prefix/include:$BOOST_INCLUDEDIR
 export BOOST_LIBRARYDIR=prefix/lib:$BOOST_LIBRARYDIR
 ```
 
-Clone `sptag` and install:
+Clone `SPTAG` and install:
 
 ```bash
 git config --global filter.lfs.smudge "git-lfs smudge --skip -- %f"
@@ -319,9 +345,12 @@ mkdir build
 cd build
 cmake ..
 make -j 16
+
+# add python path
+export PYTHONPATH=/SPTAG/Release:$PYTHONPATH
 ```
 
-关于SPANN的使用，可以参考[这里](https://github.com/microsoft/SPTAG/blob/main/docs/Tutorial.ipynb)。接下来和SPANN有关的代码都最好放在`Release`文件夹下运行。
+关于SPANN的使用，可以参考[这里](https://github.com/microsoft/SPTAG/blob/main/docs/Tutorial.ipynb)。
 
 ### build index
 
@@ -334,7 +363,7 @@ make -j 16
 代码见[这里](./SPANN/build-index.py), 使用下面的命令运行脚本构建索引(可能需要几个小时)。
 
 ```bash
-python3 -u build-index.py --passage-path-prefix "../embedding_data/corpus/split0" 2>&1 > build-index.log &
+python -u build-index.py --passage-path-prefix "../embedding_data/corpus/split0" 2>&1 > build-index.log &
 ```
 
 构建完成后得到index的目录如下:
@@ -357,44 +386,52 @@ python3 -u build-index.py --passage-path-prefix "../embedding_data/corpus/split0
 `SPANN`搜索代码在[这里](./SPANN/search.py), 我们可以使用下面的命令运行脚本。
 
 ```bash
-python3 -u search.py \
+python -u search.py \
   --query-path "../data/queries.dev.small.tsv" \
   --search-result-path "./spann_qrels.tsv" \
   --latency-result-path "./spann_latency.tsv"
 ```
 
-`SPANN`+`Inverted Index`搜索代码在[这里](./SPANN/hybrid-search.py), 基本思想是`SPANN`和`Elasticsearch`各搜索200个结果, 然后合并。使用下面的命令运行脚本。
+`SPANN`+`Inverted Index`搜索代码在[这里](./SPANN/hybrid-search.py), 基本思想是`SPANN`和`Elasticsearch`分别搜索 $k_1$ 和 $k_2$ 个结果, 然后合并(intersection)。使用下面的命令运行脚本。
 
 ```bash
-python3 -u hybrid-search.py \
+python -u hybrid-search.py \
   --query-path "../../data/queries.dev.small.tsv" \
   --query-embedding-path "../../embedding_data/query/query_dev_small.pt" \
-  --search-result-path "./inverted_index_spann_qrels.tsv" \
-  --latency-result-path "./inverted_index_spann_latency.tsv" \
-  --knn_weight 10.0
+  --search-result-path-prefix "./inverted_index_spann_qrels_" \
+  --latency-result-path-prefix "./inverted_index_spann_latency_" \
+  --k1 5000 \
+  --k2 10000 \
+  --knn_weight 15000.0
 ```
 
 ## Evaluation
 
-Accuracy部分的验证需要在**Windows Python3.9**环境下进行, 代码见[这里](./Evaluation/eval_trec.py):
+Accuracy计算的代码见[这里](./Evaluation/eval_recall.py):
 
 ```bash
-python -u eval_trec.py --trec_path "path-to-search-result" --qrels_path "./qrels.dev.small.tsv" --output_path "./results.tsv"
+python eval_recall.py --gt_path "./gt.tsv" --search_result_path "./qrels.tsv"
 ```
 
 Latency计算的代码见[这里](./Evaluation/eval_latency.py):
 
 ```bash
-python3 eval_latency.py --path "qrels-latency.tsv"
+python eval_latency.py --path "qrels-latency.tsv"
 ```
 
-需要注意的是，输出搜索结果的格式为:
+perf_test 的 ground truth 格式为:
 
 ```
-{qid} 0 {pid} {rank} {score} IndriQueryLik
+{qid} \t {pid}
 ```
 
-而输出搜索时间的格式为:
+搜索结果的格式为:
+
+```
+{qid} \t {pid} \t {rank} \t {score}
+```
+
+搜索时间的格式为:
 
 ```
 {qid} \t {time}
@@ -408,55 +445,75 @@ Zipf's law是美国语言学家Zipf发现的，他在1932年研究英文单词�
 
 $$P(r) = \frac{C}{r^\alpha}$$
 
-这个定理说明只有少数单词被经常使用, 这一定律也在互联网内容访问中成立。我们生成的zipf分布中 $C=0.1928$, $\alpha=1$, 概率密度图如下:
+这个定理说明只有少数单词被经常使用, 这一定律也在互联网内容访问中成立。我们生成的zipf分布中 $C=0.1928$, $\alpha=1$, 概率密度图如下(左边为passage filter data, 右边为query filter data):
 
 <div align=center>
-<img src="./FilterSearch/zipf.jpg" width=80%/>
+<img src="./FilterSearch/zipf-passages.svg" width=40%/>
+<img src="./FilterSearch/zipf-queries.svg" width=40%/>
 </div>
 </br>
 
 在`FilterSearch`文件夹中:
 
-- `gen_filter.py`用于生成`location`和`tag`.
-- `gen_gt.py`用于生成ground truth. 格式为`{qid} \t {pid} \t {rank} \t {score}`
-- `spann_filter.py`每次**double** SPANN返回的结果直到filter后剩余结果超过给定的 $k$ 个，该结果作为baseline.
-- `eval.py`用于计算filter search的`MRR`和`Recall`.
+- `gen_filter.py`用于生成passage和query的`location`和`tag`.
+- `gen_gt.py`用于生成ground truth. 格式为`{qid} \t {pid} \t {rank} \t {score}`. 这与perf_test的ground truth格式不同, 因此在evaluation accuracy时需要修改[脚本](./Evaluation/eval_recall.py).
+- `gt.tsv`生成的ground truth.
+- `spann_filter.py` $k$ 设为 $-1$ 时, 每次**double** SPANN返回的结果直到filter后剩余结果超过100; $k$ 设为大于0的整数时, 用SPANN搜索 $k$ 个结果, 经过filter后直接返回(因此结果可能不足100个), 实验中设置为 $100$ 、 $1000$ 、 $10000$ .
 
 ```bash
-python3 gen_filter.py \
+python -u gen_filter.py \
   --passage-filter-path "passage_filter.tsv" \
   --query-filter-path "query_filter.tsv" \
   --query-path "../data/queries_dev_small.tsv"
 
-python3 gen_gt.py \
+python -u gen_gt.py \
   --query-filter-path "query_filter.tsv" \
   --passage-filter-path "passage_filter.tsv" \
   --query-path "../embedding_data/query/query_dev_small.pt" \
   --passage-path-prefix "../embedding_data/corpus/split0" \
   --result-path "gt.tsv"
 
-python3 spann_filter.py \
+python -u spann_filter.py \
   --query-filter-path "query_filter.tsv" \
   --passage-filter-path "passage_filter.tsv" \
   --query-path "../embedding_data/query/query_dev_small.pt" \
   --search-result-path "./spann_filter_qrels.tsv" \
   --latency-result-path "./spann_filter_latency.tsv" \
+  --k -1
+
+python -u spann_filter.py \
+  --query-filter-path "query_filter.tsv" \
+  --passage-filter-path "passage_filter.tsv" \
+  --query-path "../embedding_data/query/query_dev_small.pt" \
+  --search-result-path "./spann_filter_qrels-100.tsv" \
+  --latency-result-path "./spann_filter_latency-100.tsv" \
   --k 100
 
-python3 eval.py \
-  --gt-path "gt.tsv" \
-  --search-result-path "./spann_filter_qrels.tsv" \
-  --k 100
+python -u spann_filter.py \
+  --query-filter-path "query_filter.tsv" \
+  --passage-filter-path "passage_filter.tsv" \
+  --query-path "../embedding_data/query/query_dev_small.pt" \
+  --search-result-path "./spann_filter_qrels-1000.tsv" \
+  --latency-result-path "./spann_filter_latency-1000.tsv" \
+  --k 1000
+
+python -u spann_filter.py \
+  --query-filter-path "query_filter.tsv" \
+  --passage-filter-path "passage_filter.tsv" \
+  --query-path "../embedding_data/query/query_dev_small.pt" \
+  --search-result-path "./spann_filter_qrels-10000.tsv" \
+  --latency-result-path "./spann_filter_latency-10000.tsv" \
+  --k 10000
 ```
 
-## Update Performance
+## Streaming Update
 
 ### pack vectors
 
 将数据拆分为**10份**, 第 $i$ 份包含`split0[0~i-1].pt`. 然后将数据转化为`binary`格式, 代码在[这里](./UpdatePerf/pack_vectors.py), 可以使用以下命令执行:
 
 ```bash
-python3 pack_vectors.py \
+python -u pack_vectors.py \
   --passage-path-prefix "../embedding_data/corpus/split0" \
   --query-path "../embedding_data/query/query_dev_small.pt" \
   --corpus-bin-path-prefix "doc_vectors_" \
@@ -514,7 +571,7 @@ path-to-ssdserving path-to-8.84M.ini
 搜索结果是以二进制保存的, 因此需要进行转换, 转换脚本见[此](./UpdatePerf/bin2tsv.py), 可以使用以下命令执行:
 
 ```bash
-python3 bin2tsv.py \
+python -u bin2tsv.py \
   --query-path "/data/data5/v-yaoqichen/data/queries.dev.small.tsv" \
   --bin-result-path-prefix "./results/result-"
 ```
