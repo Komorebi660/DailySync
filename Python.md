@@ -12,6 +12,7 @@
     - [set](#set)
     - [list](#list)
   - [numpy](#numpy)
+  - [pytorch](#pytorch)
   - [Matplotlib](#matplotlib)
   - [Faker](#faker)
 
@@ -175,7 +176,7 @@ for key in d.keys():
 # str to dict
 import json
 str1 = "{'a': 1, 'b': 2}"
-json.loads(str1)
+dict1 = json.loads(str1)
 ```
 
 ### set
@@ -251,6 +252,27 @@ np.argsort(a)
 a = np.array([[1, 2, 3], [4, 5, 6], [7, 8, 9]])
 np.delete(a, 1, axis=0) # [1, 2, 3], [7, 8, 9]
 np.delete(a, 1, axis=1) # [1, 3], [4, 6], [7, 9]
+
+#求topk (dataset按照id从小到大有序排列)
+def get_topk(query, dataset, k):
+    distance = np.linalg.norm(dataset - query, axis=1)
+    topk_index = np.argpartition(distance, k)[:k]
+    topk_distance = distance[topk_index]
+    return topk_index[np.argsort(topk_distance)]
+```
+
+## pytorch
+
+```python
+import torch as th
+
+torch.clamp(input, min, max) # 将input中的元素限制在[min, max]之间
+
+
+# 求一个矩阵行与行之间的l2 norm距离, 返回flat之后的三角矩阵
+import torch.nn.functional as F
+x = th.tensor([[1, 1, 1], [1, 1, 1], [2, 2, 2]])
+F.pdist(x, p=2) # tensor([0., 1., 1.])
 ```
 
 ## Matplotlib
