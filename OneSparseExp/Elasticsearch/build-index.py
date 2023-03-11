@@ -38,7 +38,7 @@ def create_index(index_name):
                     "index": True,
                     "index_options": {
                         "type": "hnsw",
-                        "m": 16,
+                        "m": 32,
                         "ef_construction": 100
                     },
                     "similarity": "l2_norm"  # l2_norm, dot_product, cosine
