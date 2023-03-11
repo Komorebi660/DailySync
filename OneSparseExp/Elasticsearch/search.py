@@ -23,29 +23,30 @@ def search_with_inverted_index_and_knn(inverted_index_key, knn_key, knn_weight, 
         'Content-Type': 'application/json'
     }
     payload = {
-        "size": 200,
+        "size": 100,
         "query": {
             "match": {
                 inverted_index_key: {
                     "query": query,
-                    "boost": 1
+                    "boost": 1.0
                 }
             }
         },
         "knn": {
             "field": knn_key,
             "query_vector": query_embedding,
-            "k": 100,
-            "num_candidates": 100,
+            "k": 500,
+            "num_candidates": 500,
             "boost": knn_weight
         },
+        "_source" : False,
+        #"track_total_hits": True,
     }
     response = s.request("GET", url, headers=headers, data=json.dumps(payload), verify=cert, auth=(user, password))
     res = json.loads(response.text)
 
-    latency = response.elapsed.total_seconds()
-
-    return [(record["_source"]["docid"], idx+1, record["_score"]) for idx, record in enumerate(res["hits"]["hits"])], latency
+    #latency = response.elapsed.total_seconds()
+    return [(record["_id"], idx+1, record["_score"]) for idx, record in enumerate(res["hits"]["hits"])], res['took']/1000.0
 
 
 def search_with_inverted_index(key, query):
@@ -62,13 +63,13 @@ def search_with_inverted_index(key, query):
                 key: query,
             },
         },
+        "_source" : False,
     }
     response = s.request("GET", url, headers=headers, data=json.dumps(payload), verify=cert, auth=(user, password))
     res = json.loads(response.text)
 
-    latency = response.elapsed.total_seconds()
-
-    return [(record["_source"]["docid"], idx+1, record["_score"]) for idx, record in enumerate(res["hits"]["hits"])], latency
+    #latency = response.elapsed.total_seconds()
+    return [(record["_id"], idx+1, record["_score"]) for idx, record in enumerate(res["hits"]["hits"])], res['took']/1000.0
 
 
 def search_with_knn(key, query_embedding):
@@ -85,13 +86,14 @@ def search_with_knn(key, query_embedding):
             "query_vector": query_embedding,
             "k": 100,  # number of results
             "num_candidates": 100
-        }
+        },
+        "_source" : False,
     }
     response = s.request("GET", url, headers=headers, data=json.dumps(payload), verify=cert, auth=(user, password))
     res = json.loads(response.text)
 
-    latency = response.elapsed.total_seconds()
-    return [(record["_source"]["docid"], idx+1, record["_score"]) for idx, record in enumerate(res["hits"]["hits"])], latency
+    #latency = response.elapsed.total_seconds()
+    return [(record["_id"], idx+1, record["_score"]) for idx, record in enumerate(res["hits"]["hits"])], res['took']/1000.0
 
 
 def search_queries_with_inverted_index(query_path, key, qrels_path, latency_path, queries=-1, print_frequency=100):

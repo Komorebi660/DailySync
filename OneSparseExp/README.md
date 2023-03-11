@@ -48,7 +48,7 @@ with open("xxx.tsv", "r", encoding="utf8") as f:
         ...
 ```
 
-利用一下的python代码将`qrels.dev.small.tsv`转化为`gt.tsv`备用:
+利用以下的python代码将`qrels.dev.small.tsv`转化为`gt.tsv`备用:
 
 ```python
 import csv
@@ -120,21 +120,23 @@ def transform(x):
 
 官方文档:
 
-- [create index](https://www.elastic.co/guide/en/elasticsearch/reference/8.4/indices-create-index.html)
-- [insert data](https://www.elastic.co/guide/en/elasticsearch/reference/8.4/docs-index_.html)
-- [update data](https://www.elastic.co/guide/en/elasticsearch/reference/8.4/docs-update.html)
-- [search](https://www.elastic.co/guide/en/elasticsearch/reference/8.4/search-search.html#request-body-search-query)
+- [create index](https://www.elastic.co/guide/en/elasticsearch/reference/8.6/indices-create-index.html)
+- [insert data](https://www.elastic.co/guide/en/elasticsearch/reference/8.6/docs-index_.html)
+- [update data](https://www.elastic.co/guide/en/elasticsearch/reference/8.6/docs-update.html)
+- [search](https://www.elastic.co/guide/en/elasticsearch/reference/8.6/search-search.html#request-body-search-query)
+
+**注意: elasticsearch存在kNN hybrid search的bug, 导致recall偏低。详情见[这里](https://discuss.elastic.co/t/aggregate-score-for-hybrid-search/325205/3)和[这里](https://github.com/elastic/elasticsearch/pull/93871), 此bug需要在后续版本中修复。**
 
 ### docker安装
 
 ```bash
-docker pull docker.elastic.co/elasticsearch/elasticsearch:8.4.3
+docker pull docker.elastic.co/elasticsearch/elasticsearch:8.6.2
 
 #设置用户
 docker network create elastic
 
 #9200是es对外的默认端口, 这里把它转发到9400
-docker run --name cyq-es --net elastic -p 9400:9200 -p 9500:9300 -e "discovery.type=single-node" -it docker.elastic.co/elasticsearch/elasticsearch:8.4.3
+docker run --name cyq-es --net elastic -p 9400:9200 -p 9500:9300 -e "discovery.type=single-node" -it docker.elastic.co/elasticsearch/elasticsearch:8.6.2
 ```
 
 等待docker创建完毕，屏幕上会出现password, 将其记下来, 同时还需要复制`http_ca.crt`.
@@ -283,7 +285,16 @@ python -u search.py \
 --knn-weight 15000.0
 ```
 
-[KNN + Inverted Index Hybrid Search官方文档](https://www.elastic.co/guide/en/elasticsearch/reference/8.4/knn-search.html#approximate-knn)
+[KNN + Inverted Index Hybrid Search官方文档](https://www.elastic.co/guide/en/elasticsearch/reference/8.6/knn-search.html#approximate-knn)
+
+
+Search parameters:
+
+```bash
+"_source" : False           #不返回文档内容(text, embedding)
+"explain": True             #返回score的计算过程
+"track_total_hits": True    #追踪计算总命中数，在8.6.2中可解决hybrid search结果错误的bug, 但会增加latency
+```
 
 ### utils
 
@@ -293,6 +304,32 @@ curl -X GET https://localhost:9400/ms-marco/ --cacert http_ca.crt -u elastic
 
 #see doc0
 curl -X GET https://localhost:9400/ms-marco/_doc/0 --cacert http_ca.crt -u elastic
+```
+
+查询thread pool的状态(es中默认在一个分片上的一个搜索请求是**单线程**的):
+
+```python
+url = "https://localhost:9200/_nodes/stats?pretty"
+headers = {
+    'Content-Type': 'application/json'
+}
+
+response = s.request("GET", url, headers=headers, verify=cert, auth=(user, password))
+res = json.loads(response.text)
+print(res['nodes']['XDUvwYP6SgC1vGT1BlnEhQ']['thread_pool']['search'])
+```
+
+强制合并分段(segments), 也可以用于解决hybrid search的bug:
+
+```python
+url = "https://localhost:9200/ms-marco/_forcemerge?max_num_segments=1"
+headers = {
+    'Content-Type': 'application/json'
+}
+
+response = s.request("POST", url, headers=headers, verify=cert, auth=(user, password))
+res = json.loads(response.text)
+print(res)
 ```
 
 ## Run SPANN
@@ -356,9 +393,10 @@ export PYTHONPATH=/SPTAG/Release:$PYTHONPATH
 
 有几点需要注意:
 
-- `InternalResultNum`和`SearchInternalResultNum`要**保持一致**, 一个是build的参数, 一个是search的参数, 是指search多少个posting.
+- `InternalResultNum`和`SearchInternalResultNum`要**保持一致**, 一个是build的参数, 一个是search的参数, 是指search多少个posting. 增大此参数可以提高recall, 但会增加disk I/O从而增加延迟。
 - `PostingPageLimit`和`SearchPostingPageLimit`也需要**保持一致**, 原因同上, 是指一个posting最多有多少个4k page.
 - `index.SetBuildParam("xxx", "xxx", "SearchSSDIndex")`貌似没有用, 所有的设置都要写成`index.SetBuildParam("xxx", "xxx", "BuildSSDIndex")`.
+- 将`SelectThreshold`, `SplitFactor`, `SplitThreshold`设为0, 可以通过调整`Ratio`来设置多少的数据作为centroids.
 
 代码见[这里](./SPANN/build-index.py), 使用下面的命令运行脚本构建索引(可能需要几个小时)。
 
@@ -380,6 +418,8 @@ python -u build-index.py --passage-path-prefix "../embedding_data/corpus/split0"
 - SPTAGHeadVectorIDs.bin  
 - SPTAGHeadVectors.bin
 ```
+
+只 load `HeadIndex` 进行搜索，可用来找到离query较近的postings的centroid documents. Load 全部 index, 设置`SearchInternalResultNum = 1`, 并根据`PostingPageLimit`估算每个posting的大小, 用此数值作为 $K$ 进行搜索，然后排除HeadIndex中搜索的结果, 得到的就是离query最近的posting内的所有documents.
 
 ### search
 

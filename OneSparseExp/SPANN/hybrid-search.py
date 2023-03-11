@@ -31,14 +31,15 @@ def search_with_inverted_index(query, k):
                 "doc": query,
             },
         },
+        "_source" : False,
     }
     response = s.request("GET", url, headers=headers, data=json.dumps(payload), verify=cert, auth=(user, password))
     res = json.loads(response.text)
 
-    latency = response.elapsed.total_seconds()
+    #latency = response.elapsed.total_seconds()
 
     #record["_source"]["embedding"]
-    return [(record["_source"]["docid"], idx+1, record["_score"]) for idx, record in enumerate(res["hits"]["hits"])], latency
+    return [(record["_id"], idx+1, record["_score"]) for idx, record in enumerate(res["hits"]["hits"])], res['took']/1000.0
 
 
 def search_with_spann(embedding, k):
