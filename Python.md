@@ -253,11 +253,41 @@ a = np.array([[1, 2, 3], [4, 5, 6], [7, 8, 9]])
 np.delete(a, 1, axis=0) # [1, 2, 3], [7, 8, 9]
 np.delete(a, 1, axis=1) # [1, 3], [4, 6], [7, 9]
 
-#求topk (dataset按照id从小到大有序排列)
+
+#矩阵求逆
+np.linalg.inv(a)    # a is two-dim
+
+
+#求多元变量的均值和协方差矩阵
+a = np.random.rand(100, 10) #100组数据，每组10个特征
+mean = np.mean(a, axis=0)   #10
+cov = np.cov(a.T)           #10*10
+#多元高斯采样
+np.random.multivariate_normal(mean, cov)
+
+
+#对角矩阵转化
+a = np.array([[1, 2, 3], [4, 5, 6], [7, 8, 9]])
+b = np.diagonal(a)      # [1, 5, 9]
+c = np.diag(b)          # [[1, 0, 0], [0, 5, 0], [0, 0, 9]]
+
+
+#填充
+a = np.array([0, 0, 0])
+b = np.pad(a, (2, 3), 'constant', constant_values=(1, -1))  # [1, 1, 0, 0, 0, -1, -1, -1]
+
+
+#求topk (dataset按照id从小到大有序排列: 0, 1, ...)
 def get_topk(query, dataset, k):
     distance = np.linalg.norm(dataset - query, axis=1)
     topk_index = np.argpartition(distance, k)[:k]
     topk_distance = distance[topk_index]
+    return topk_index[np.argsort(topk_distance)]
+
+def get_topk(query, dataset, k):
+    distance = np.dot(dataset, query)
+    topk_index = np.argpartition(distance, -k)[-k:]
+    topk_distance = -distance[topk_index]
     return topk_index[np.argsort(topk_distance)]
 ```
 
